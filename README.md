@@ -10,10 +10,11 @@ Client/Server uygulaması.
 
 ## Kurulum
 
-1. Projeyi klonlayın:
+1. Projeyi klonlayın ve submodule'leri initialize edin:
 ```bash
 git clone [repository-url]
 cd Fracq
+git submodule update --init --recursive
 ```
 
 2. Build script'ini çalıştırmak için PowerShell politikasını ayarlayın (Yönetici olarak PowerShell'de):
@@ -69,6 +70,13 @@ Build edilen dosyalar `build/bin/Release/` klasöründe oluşturulur:
 - `build.ps1` - Build ve çalıştırma scripti
 - `CMakeLists.txt` - CMake yapılandırma dosyası
 
-## Not
+## Olası Sorunlar ve Çözümleri
 
-Build işlemi sırasında herhangi bir hata alırsanız, önce `build.ps1 clean` komutunu çalıştırıp tekrar deneyebilirsiniz. 
+### Dear ImGui Hatası
+Eğer Dear ImGui ile ilgili dosyaların eksik olduğuna dair hatalar alıyorsanız, şu komutu çalıştırın:
+```bash
+git submodule update --init --recursive
+```
+
+### Genel Build Hataları
+Build işlemi sırasında herhangi bir hata alırsanız, önce `build.ps1 clean` komutunu çalıştırıp tekrar deneyebilirsiniz.

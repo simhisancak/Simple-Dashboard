@@ -91,7 +91,7 @@ void DashboardView::Render()
                 ImGui::EndChild();
                 ImGui::PopStyleVar();
 
-                ImGui::BeginChild("MainContent", ImVec2(0, 0), false);
+                ImGui::BeginChild("MainContent", ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, 0), false);
                 m_MainContent->Render(m_ActiveContent, m_SelectedPid);
                 ImGui::EndChild();
             }

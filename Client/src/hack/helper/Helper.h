@@ -6,16 +6,13 @@
 #include <map>
 #include <Windows.h>
 
-
-
-
-// Character instance map type
 using TCharacterInstanceMap = std::map<uint32_t, uintptr_t>;
 
-class Helper {
+class Helper
+{
 public:
-    static bool CompareInstances(const Instance& a, const Instance& b);
-    static bool ComparePacketsInstances(const Packets::Instance& a, const Packets::Instance& b);
+    static bool CompareInstances(const Instance &a, const Instance &b);
+    static bool ComparePacketsInstances(const Packets::Instance &a, const Packets::Instance &b);
     static Instance GetMainActor();
     static std::vector<Instance> getMobList(MobType targetTypes);
     static std::vector<Packets::Instance> getMobs(MobType targetTypes);

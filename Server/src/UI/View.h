@@ -6,47 +6,48 @@
 #include "../Application.h"
 #include "../Renderer.h"
 
-namespace UI {
-namespace Views {
+namespace UI
+{
+    namespace Views
+    {
 
-// Forward declarations
-class IViewState;
+        class IViewState;
 
-class View {
-public:
-    View(Application* app, Renderer* renderer);
-    virtual ~View() = default;
+        class View
+        {
+        public:
+            View(Application *app, Renderer *renderer);
+            virtual ~View() = default;
 
-    virtual void Update() = 0;
-    virtual void Render() = 0;
-    
-    virtual const char* GetViewId() const = 0;
-    virtual std::unique_ptr<IViewState> CreateState() = 0;
-    
-    const std::string& GetName() const { return m_Name; }
+            virtual void Update() = 0;
+            virtual void Render() = 0;
 
-    static const char* GetStaticViewId() { return "View"; }
+            virtual const char *GetViewId() const = 0;
+            virtual std::unique_ptr<IViewState> CreateState() = 0;
 
-protected:
-    Application* m_App;
-    Renderer* m_Renderer;
-    std::string m_Name;
+            const std::string &GetName() const { return m_Name; }
 
-    // Title bar'ı render et
-    void RenderTitleBar(const char* title, bool showExitButton = true);
+            static const char *GetStaticViewId() { return "View"; }
 
-protected:
-    bool m_IsDragging = false;
-    float m_LastMouseX = 0.0f;
-    float m_LastMouseY = 0.0f;
-};
+        protected:
+            Application *m_App;
+            Renderer *m_Renderer;
+            std::string m_Name;
 
-// View state interface
-class IViewState {
-public:
-    virtual ~IViewState() = default;
-    virtual void Reset() = 0;
-};
+            void RenderTitleBar(const char *title, bool showExitButton = true);
 
-} // namespace Views
-} // namespace UI 
+        protected:
+            bool m_IsDragging = false;
+            float m_LastMouseX = 0.0f;
+            float m_LastMouseY = 0.0f;
+        };
+
+        class IViewState
+        {
+        public:
+            virtual ~IViewState() = default;
+            virtual void Reset() = 0;
+        };
+
+    }
+}

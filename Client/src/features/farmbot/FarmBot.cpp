@@ -40,7 +40,6 @@ Instance FarmBot::getAttackableMob(float distance, MobType targetTypes) {
 }
 
 Instance LastMob = Instance{0};
-bool destory = false;
 
 void FarmBot::Loop() {
     if (!s_App) {

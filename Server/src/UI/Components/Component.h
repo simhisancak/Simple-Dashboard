@@ -2,47 +2,49 @@
 #include <string>
 #include "imgui.h"
 
-namespace UI::Components {
+namespace UI::Components
+{
 
-class Component {
-public:
-    Component() 
-        : m_Position(0, 0)
-        , m_Size(0, 0)
-        , m_AutoPosition(true)
-    {}
+    class Component
+    {
+    public:
+        Component()
+            : m_Position(0, 0), m_Size(0, 0), m_AutoPosition(true)
+        {
+        }
 
-    virtual ~Component() = default;
-    
-    // Her component'in kendi render fonksiyonu olmalı
-    virtual void Render() = 0;
-    
-    // Component pozisyonunu ayarla
-    void SetPosition(float x, float y) {
-        m_Position = ImVec2(x, y);
-    }
-    
-    // Component boyutunu ayarla
-    void SetSize(float width, float height) {
-        m_Size = ImVec2(width, height);
-    }
+        virtual ~Component() = default;
 
-    const ImVec2& GetPosition() const { return m_Position; }
-    const ImVec2& GetSize() const { return m_Size; }
+        virtual void Render() = 0;
 
-    void EnableAutoPosition(bool enable = true, float fixedX = -1) { 
-        m_AutoPosition = enable; 
-    }
-    bool IsAutoPositioned() const { return m_AutoPosition; }
+        void SetPosition(float x, float y)
+        {
+            m_Position = ImVec2(x, y);
+        }
 
-protected:
-    ImVec2 m_Position;
-    ImVec2 m_Size;
-    bool m_AutoPosition;
+        void SetSize(float width, float height)
+        {
+            m_Size = ImVec2(width, height);
+        }
 
-    void UpdatePosition() {
-        ImGui::SetCursorPos(m_Position);
-    }
-};
+        const ImVec2 &GetPosition() const { return m_Position; }
+        const ImVec2 &GetSize() const { return m_Size; }
 
-} // namespace UI::Components 
+        void EnableAutoPosition(bool enable = true, float fixedX = -1)
+        {
+            m_AutoPosition = enable;
+        }
+        bool IsAutoPositioned() const { return m_AutoPosition; }
+
+    protected:
+        ImVec2 m_Position;
+        ImVec2 m_Size;
+        bool m_AutoPosition;
+
+        void UpdatePosition()
+        {
+            ImGui::SetCursorPos(m_Position);
+        }
+    };
+
+}

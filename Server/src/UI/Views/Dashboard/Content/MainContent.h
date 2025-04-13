@@ -5,21 +5,23 @@
 #include <memory>
 #include <vector>
 
-namespace UI {
-namespace Views {
+namespace UI
+{
+    namespace Views
+    {
 
-class DashboardMainContent {
-public:
-    DashboardMainContent(Application* app);
-    ~DashboardMainContent() = default;
+        class DashboardMainContent
+        {
+        public:
+            DashboardMainContent(Application *app);
+            ~DashboardMainContent() = default;
 
-    void Render(const DashboardContent* activeContent, int selectedPid);
-    
-    // Tüm content'leri döndürür
-    const std::vector<std::unique_ptr<DashboardContent>>& GetContents() const { return m_Contents; }
+            void Render(const DashboardContent *activeContent, int selectedPid);
 
-private:
-    std::vector<std::unique_ptr<DashboardContent>> m_Contents;
-};
+            const std::vector<std::unique_ptr<DashboardContent>> &GetContents() const { return m_Contents; }
+
+        private:
+            std::vector<std::unique_ptr<DashboardContent>> m_Contents;
+        };
+    }
 }
-} 

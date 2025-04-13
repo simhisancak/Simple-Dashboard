@@ -2,37 +2,41 @@
 #include "Component.h"
 #include <functional>
 
-namespace UI::Components {
+namespace UI::Components
+{
 
-class Checkbox : public Component {
-public:
-    Checkbox(const char* label, bool* value)
-        : m_Label(label)
-        , m_Value(value)
+    class Checkbox : public Component
     {
-    }
-
-    ~Checkbox() override = default;
-
-    void Render() override {
-        UpdatePosition();
-        
-        if (ImGui::Checkbox(m_Label, m_Value))
+    public:
+        Checkbox(const char *label, bool *value)
+            : m_Label(label), m_Value(value)
         {
-            if (m_OnChangeCallback) {
-                m_OnChangeCallback(*m_Value);
+        }
+
+        ~Checkbox() override = default;
+
+        void Render() override
+        {
+            UpdatePosition();
+
+            if (ImGui::Checkbox(m_Label, m_Value))
+            {
+                if (m_OnChangeCallback)
+                {
+                    m_OnChangeCallback(*m_Value);
+                }
             }
         }
-    }
 
-    void SetOnChange(std::function<void(bool)> callback) {
-        m_OnChangeCallback = std::move(callback);
-    }
+        void SetOnChange(std::function<void(bool)> callback)
+        {
+            m_OnChangeCallback = std::move(callback);
+        }
 
-private:
-    const char* m_Label;
-    bool* m_Value;
-    std::function<void(bool)> m_OnChangeCallback;
-};
+    private:
+        const char *m_Label;
+        bool *m_Value;
+        std::function<void(bool)> m_OnChangeCallback;
+    };
 
-} // namespace UI::Components 
+}

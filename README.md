@@ -2,6 +2,11 @@
 
 Client/Server uygulaması.
 
+## Demo Videoları
+
+- [Çalışma Örneği](https://streamable.com/zv2vom)
+- [Adres Bulma](https://youtu.be/0zPahFoajko)
+
 ## Gereksinimler
 
 - Visual Studio 2022

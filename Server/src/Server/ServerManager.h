@@ -120,21 +120,15 @@ namespace Server
         void Update();
 
         const std::vector<std::shared_ptr<ClientInfo>> &GetConnectedClients() const;
-        bool SendSettingsToClient(int clientPID, const Packets::SettingsResponsePacket &settings);
         bool RequestMemoryInfo(int clientPID);
         const Packets::SettingsState *GetClientSettings(int clientPID) const;
-        bool UpdateClientSettings(int clientPID, const Packets::SettingsResponsePacket &settings);
         ClientInfo *FindClientByPID(int clientPID);
-        const ClientInfo *FindClientByPID(int clientPID) const;
 
     private:
         void ServerThread();
         void AcceptThread();
         void ClientThread(std::shared_ptr<ClientInfo> client);
-        void ProcessRegisterRequest(SOCKET clientSocket, const char *buffer, int bytesReceived);
-        void RemoveClient(SOCKET clientSocket);
         bool SendPacket(SOCKET socket, const void *data, size_t size);
-        bool ReceivePacket(SOCKET socket, void *data, size_t size);
         bool ProcessPacket(std::shared_ptr<ClientInfo> client, const char *data, size_t size);
 
     private:

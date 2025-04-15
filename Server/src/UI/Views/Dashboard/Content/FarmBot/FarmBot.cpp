@@ -3,12 +3,12 @@
 #include "PacketTypes.h"
 #include "Server/ServerManager.h"
 #include "common/Logger.h"
+#include <windows.h>
 
 namespace UI
 {
     namespace Views
     {
-
         struct MobTypeUI
         {
             const char *name;
@@ -18,6 +18,36 @@ namespace UI
         const MobTypeUI MOB_TYPES[] = {
             {"Normal Mobs", MobType::Normal},
             {"Metin Stones", MobType::Metin}};
+
+        struct handle_data {
+            unsigned long process_id;
+            HWND window_handle;
+        };
+
+        BOOL is_main_window(HWND handle)
+        {
+            return GetWindow(handle, GW_CHILD) == (HWND)0 && IsWindowVisible(handle);
+        }
+
+        BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam)
+        {
+            handle_data& data = *(handle_data*)lParam;
+            unsigned long process_id = 0;
+            GetWindowThreadProcessId(handle, &process_id);
+            if (data.process_id != process_id || !is_main_window(handle))
+                return TRUE;
+            data.window_handle = handle;
+            return FALSE;
+        }
+
+        HWND find_main_window(unsigned long process_id)
+        {
+            handle_data data;
+            data.process_id = process_id;
+            data.window_handle = 0;
+            EnumWindows(enum_windows_callback, (LPARAM)&data);
+            return data.window_handle;
+        }
 
         FarmBot::FarmBot(Application *app)
             : DashboardContent(app)
@@ -70,6 +100,8 @@ namespace UI
 
             ImGui::Checkbox("Render Skip", &settings.RenderSkip);
 
+            ImGui::Checkbox("Clear Ram", &settings.ClearRam);
+
             ImGui::SliderFloat("Area Size", &settings.AreaSize, 10.0f, 100.0f, "%.1f");
 
             ImGui::Spacing();
@@ -107,6 +139,8 @@ namespace UI
 
             ImGui::Text("Current Settings");
             ImGui::Text("Auto Loot: %s", settings.AutoLoot ? "Enabled" : "Disabled");
+            ImGui::Text("Render Skip: %s", settings.RenderSkip ? "Enabled" : "Disabled");
+            ImGui::Text("Clear Ram: %s", settings.ClearRam ? "Enabled" : "Disabled");
             ImGui::Text("Area Size: %.1f", settings.AreaSize);
             ImGui::Text("Target Types: ");
             ImGui::SameLine();
@@ -199,6 +233,5 @@ namespace UI
 
             ImGui::Dummy(ImVec2(mapSize, mapSize));
         }
-
     }
 }

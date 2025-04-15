@@ -8,6 +8,7 @@ namespace Packets {
         float AreaSize;
         MobType TargetTypes;
         bool RenderSkip;
+        bool ClearRam;
 
         FarmBotState()
             : FarmBotStatus(false)
@@ -15,6 +16,7 @@ namespace Packets {
             , AreaSize(0.0f)
             , TargetTypes(MobType::None)
             , RenderSkip(false)
+            , ClearRam(false)
         {}
     };
 }

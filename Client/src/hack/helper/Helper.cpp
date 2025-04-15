@@ -136,3 +136,50 @@ void Helper::RenderCondition(bool enable)
 
     Memory::PatchBytes(Globals::Get()->RenderCondition, disable_bytes, sizeof(disable_bytes));
 }
+
+bool Helper::ClearRam()
+{
+    // Get device pointer similar to ImGui's approach
+    if (!Globals::Get()->D3D9Device)
+        return false;
+
+    LPDIRECT3DDEVICE9 device = nullptr;
+    device = *(LPDIRECT3DDEVICE9*)Globals::Get()->D3D9Device;
+    if (!device)
+        return false;
+
+    // Save current state
+    IDirect3DStateBlock9* state_block = nullptr;
+    device->CreateStateBlock(D3DSBT_ALL, &state_block);
+    if (state_block)
+        state_block->Capture();
+
+    // Simple viewport test
+    D3DVIEWPORT9 vp;
+    vp.X = 0;
+    vp.Y = 0;
+    vp.Width = 100;
+    vp.Height = 100;
+    vp.MinZ = 0.0f;
+    vp.MaxZ = 1.0f;
+    device->SetViewport(&vp);
+
+    // Restore state
+    if (state_block)
+    {
+        state_block->Apply();
+        state_block->Release();
+    }
+
+    // Clear working set
+    HANDLE process = GetCurrentProcess();
+    SetProcessWorkingSetSize(process, -1, -1);
+    
+    // Try to minimize the working set
+    SIZE_T minWS = 8 * 1024 * 1024;  // 8 MB minimum
+    SIZE_T maxWS = 128 * 1024 * 1024; // 128 MB maximum
+    SetProcessWorkingSetSize(process, minWS, maxWS);
+    
+    LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Device test completed");
+    return true;
+}

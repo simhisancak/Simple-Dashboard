@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#include <TlHelp32.h>
 #include <string>
 #include <vector>
 #include <thread>
@@ -601,5 +602,4 @@ namespace Server
 
         return it != m_Clients.end() ? it->get() : nullptr;
     }
-
 }

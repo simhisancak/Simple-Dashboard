@@ -40,6 +40,9 @@ public:
 
         RenderCondition = Memory::FindPattern("metin2client.exe", "c7 05 ? ? ? ? ? ? ? ? eb ? 85 d2");
         RenderCondition = RenderCondition + 0xE;
+
+        D3D9Device = Memory::FindAndResolvePointer("metin2client.exe", "a1 ? ? ? ? 6a ? 6a ? 50 8b 08 ff 51", 0x1);
+        //D3D9Device = Memory::Read<uintptr_t>(D3D9Device);
     }
 
     uint32_t OffsetBase = 0x250;
@@ -59,4 +62,5 @@ public:
     uintptr_t RenderCondition = 0;
     uintptr_t PythonResourceManager = 0;
     uintptr_t PythonResourceDestory = 0;
+    uintptr_t D3D9Device = 0;
 };

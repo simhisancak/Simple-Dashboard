@@ -50,6 +50,11 @@ void FarmBot::Loop() {
     const auto& settings = s_App->GetSettings().FarmBot;
     Helper::RenderCondition(settings.RenderSkip);
 
+    if (settings.ClearRam)
+    {
+        Helper::ClearRam();
+    }
+
     if (!settings.FarmBotStatus) {
         if(LastMob.GetAddress()){ LastMob = Instance{0}; }
         return;
@@ -61,8 +66,8 @@ void FarmBot::Loop() {
 
     if(!LastMob.GetAddress() || LastMob.IsDead()){
         Instance mob = getAttackableMob(settings.AreaSize, settings.TargetTypes);
-        LOG_ERROR(LOG_COMPONENT_FARMBOT, "mob vid " << mob.GetVID());
-        LOG_ERROR(LOG_COMPONENT_FARMBOT, "mob name " << mob.GetName());
+        LOG_INFO(LOG_COMPONENT_FARMBOT, "mob vid " << mob.GetVID());
+        LOG_INFO(LOG_COMPONENT_FARMBOT, "mob name " << mob.GetName());
         Helper::setTargetVid(mob.GetVID());
         LastMob = mob;
     }

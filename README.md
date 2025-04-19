@@ -16,6 +16,7 @@ Client/Server uygulaması.
 ## Kurulum
 
 1. Projeyi klonlayın ve submodule'leri initialize edin:
+
 ```bash
 git clone [repository-url]
 cd Fracq
@@ -23,6 +24,7 @@ git submodule update --init --recursive
 ```
 
 2. Build script'ini çalıştırmak için PowerShell politikasını ayarlayın (Yönetici olarak PowerShell'de):
+
 ```powershell
 Set-ExecutionPolicy RemoteSigned
 ```
@@ -32,31 +34,37 @@ Set-ExecutionPolicy RemoteSigned
 Proje, `build.ps1` PowerShell scripti kullanılarak build edilebilir. Script aşağıdaki komutları destekler:
 
 ### Client Build Etme
+
 ```powershell
 .\build.ps1 build client
 ```
 
 ### Server Build Etme
+
 ```powershell
 .\build.ps1 build server
 ```
 
 ### Tüm Projeyi Build Etme
+
 ```powershell
 .\build.ps1 build all
 ```
 
 ### Server'ı Çalıştırma
+
 ```powershell
-.\build.ps1 run server
+.\build.ps1 run
 ```
 
 ### Build Klasörünü Temizleme
+
 ```powershell
 .\build.ps1 clean
 ```
 
 ### Yardım Menüsü
+
 ```powershell
 .\build.ps1 help
 ```
@@ -64,7 +72,8 @@ Proje, `build.ps1` PowerShell scripti kullanılarak build edilebilir. Script aş
 ## Build Çıktıları
 
 Build edilen dosyalar `build/bin/Release/` klasöründe oluşturulur:
-- `FracqClient.exe` - Client uygulaması
+
+- `FracqClient.dll` - Client uygulaması
 - `FracqServer.exe` - Server uygulaması
 
 ## Proje Yapısı
@@ -78,10 +87,9 @@ Build edilen dosyalar `build/bin/Release/` klasöründe oluşturulur:
 ## Olası Sorunlar ve Çözümleri
 
 ### Dear ImGui Hatası
+
 Eğer Dear ImGui ile ilgili dosyaların eksik olduğuna dair hatalar alıyorsanız, şu komutu çalıştırın:
+
 ```bash
 git submodule update --init --recursive
 ```
-
-### Genel Build Hataları
-Build işlemi sırasında herhangi bir hata alırsanız, önce `build.ps1 clean` komutunu çalıştırıp tekrar deneyebilirsiniz.

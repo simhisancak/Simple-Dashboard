@@ -7,7 +7,7 @@
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-Window::Window(const std::string& title, int width, int height)
+Window::Window(const std::string &title, int width, int height)
     : m_Title(title), m_Width(width), m_Height(height)
 {
     WNDCLASSEXW wc = {};
@@ -22,10 +22,10 @@ Window::Window(const std::string& title, int width, int height)
 
     DWORD style = WS_POPUP | WS_VISIBLE;
     DWORD exStyle = WS_EX_LAYERED;
-    
-    RECT rect = { 0, 0, m_Width, m_Height };
+
+    RECT rect = {0, 0, m_Width, m_Height};
     AdjustWindowRectEx(&rect, style, FALSE, exStyle);
-    
+
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
     int posX = (screenWidth - (rect.right - rect.left)) / 2;
@@ -43,8 +43,7 @@ Window::Window(const std::string& title, int width, int height)
         posX, posY,
         rect.right - rect.left,
         rect.bottom - rect.top,
-        NULL, NULL, wc.hInstance, this
-    );
+        NULL, NULL, wc.hInstance, this);
 
     if (!m_Hwnd)
         throw std::runtime_error("Window creation failed!");
@@ -56,17 +55,17 @@ Window::Window(const std::string& title, int width, int height)
 
 void Window::ResizeToContent()
 {
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     ImVec2 windowSize = ImGui::GetWindowSize();
-    
-    RECT rect = { 0, 0, static_cast<LONG>(windowSize.x), static_cast<LONG>(windowSize.y) };
+
+    RECT rect = {0, 0, static_cast<LONG>(windowSize.x), static_cast<LONG>(windowSize.y)};
     AdjustWindowRectEx(&rect, GetWindowLong(m_Hwnd, GWL_STYLE), FALSE, GetWindowLong(m_Hwnd, GWL_EXSTYLE));
-    
-    SetWindowPos(m_Hwnd, NULL, 0, 0, 
-        rect.right - rect.left, 
-        rect.bottom - rect.top, 
-        SWP_NOMOVE | SWP_NOZORDER);
-    
+
+    SetWindowPos(m_Hwnd, NULL, 0, 0,
+                 rect.right - rect.left,
+                 rect.bottom - rect.top,
+                 SWP_NOMOVE | SWP_NOZORDER);
+
     m_Width = static_cast<int>(windowSize.x);
     m_Height = static_cast<int>(windowSize.y);
 }
@@ -78,7 +77,7 @@ Window::~Window()
         DestroyWindow(m_Hwnd);
         m_Hwnd = nullptr;
     }
-    
+
     UnregisterClassW(L"FracqWindowClass", GetModuleHandle(NULL));
 }
 
@@ -89,7 +88,7 @@ void Window::PollEvents()
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-        
+
         if (msg.message == WM_QUIT)
         {
             m_ShouldClose = true;
@@ -107,17 +106,17 @@ LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
     if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam))
         return true;
 
-    Window* window = nullptr;
-    
+    Window *window = nullptr;
+
     if (uMsg == WM_NCCREATE)
     {
-        CREATESTRUCT* create = reinterpret_cast<CREATESTRUCT*>(lParam);
-        window = static_cast<Window*>(create->lpCreateParams);
+        CREATESTRUCT *create = reinterpret_cast<CREATESTRUCT *>(lParam);
+        window = static_cast<Window *>(create->lpCreateParams);
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
     }
     else
     {
-        window = reinterpret_cast<Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+        window = reinterpret_cast<Window *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     }
 
     switch (uMsg)
@@ -135,15 +134,16 @@ LRESULT CALLBACK Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
 
     case WM_LBUTTONUP:
         break;
-        
+
     case WM_CLOSE:
-        if (window) window->m_ShouldClose = true;
+        if (window)
+            window->m_ShouldClose = true;
         return 0;
-        
+
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
-        
+
     case WM_KEYDOWN:
         break;
     }

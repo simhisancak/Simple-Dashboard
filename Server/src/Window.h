@@ -3,9 +3,10 @@
 #include <string>
 #include <Windows.h>
 
-class Window {
+class Window
+{
 public:
-    Window(const std::string& title, int width, int height);
+    Window(const std::string &title, int width, int height);
     ~Window();
 
     void PollEvents();

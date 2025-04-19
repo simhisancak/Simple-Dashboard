@@ -1,21 +1,19 @@
 #pragma once
-#include <cstdint>
 #include "common/Memory.hpp"
+#include <cstdint>
 
-class Globals
-{
+class Globals {
 private:
-    static Globals *instance;
+    static Globals* instance;
     Globals() = default;
 
 public:
-    Globals(const Globals &) = delete;
-    Globals &operator=(const Globals &) = delete;
+    Globals(const Globals&) = delete;
+    Globals& operator=(const Globals&) = delete;
 
-    static Globals *Get()
+    static Globals* Get()
     {
-        if (!instance)
-        {
+        if (!instance) {
             instance = new Globals();
         }
         return instance;
@@ -42,7 +40,7 @@ public:
         RenderCondition = RenderCondition + 0xE;
 
         D3D9Device = Memory::FindAndResolvePointer("metin2client.exe", "a1 ? ? ? ? 6a ? 6a ? 50 8b 08 ff 51", 0x1);
-        //D3D9Device = Memory::Read<uintptr_t>(D3D9Device);
+        // D3D9Device = Memory::Read<uintptr_t>(D3D9Device);
     }
 
     uint32_t OffsetBase = 0x250;

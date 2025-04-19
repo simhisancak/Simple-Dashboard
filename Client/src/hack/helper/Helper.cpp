@@ -2,7 +2,7 @@
 #include "../globals/Globals.h"
 #include <algorithm>
 
-bool Helper::CompareInstances(const Instance &a, const Instance &b)
+bool Helper::CompareInstances(const Instance& a, const Instance& b)
 {
     auto posA = a.GetPixelPosition();
     auto posB = b.GetPixelPosition();
@@ -12,7 +12,7 @@ bool Helper::CompareInstances(const Instance &a, const Instance &b)
     return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
 }
 
-bool Helper::ComparePacketsInstances(const Packets::Instance &a, const Packets::Instance &b)
+bool Helper::ComparePacketsInstances(const Packets::Instance& a, const Packets::Instance& b)
 {
     auto posA = a.Position;
     auto posB = b.Position;
@@ -30,18 +30,16 @@ Instance Helper::GetMainActor()
 TCharacterInstanceMap Helper::getAlivaInstMap()
 {
     uintptr_t m_kAliveInstMap_p = Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + Globals::Get()->m_kAliveInstMapOffset);
-    if (m_kAliveInstMap_p < 0x10000)
-    {
+    if (m_kAliveInstMap_p < 0x10000) {
         return TCharacterInstanceMap();
     }
 
     uintptr_t m_kAliveInstMap_map = Memory::Read<uintptr_t>(m_kAliveInstMap_p + 4);
-    if (m_kAliveInstMap_map < 0x10000)
-    {
+    if (m_kAliveInstMap_map < 0x10000) {
         return TCharacterInstanceMap();
     }
 
-    return *(TCharacterInstanceMap *)(m_kAliveInstMap_map);
+    return *(TCharacterInstanceMap*)(m_kAliveInstMap_map);
 }
 
 std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes)
@@ -54,8 +52,7 @@ std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes)
 
     TCharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
 
-    for (auto itor = m_kAliveInstMap.begin(); itor != m_kAliveInstMap.end(); itor++)
-    {
+    for (auto itor = m_kAliveInstMap.begin(); itor != m_kAliveInstMap.end(); itor++) {
         uint32_t iIndex = itor->first;
         auto instance = Instance::FromAddress(itor->second);
         auto packet = Packets::Instance();
@@ -94,8 +91,7 @@ std::vector<Instance> Helper::getMobList(MobType targetTypes)
 
     TCharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
 
-    for (auto itor = m_kAliveInstMap.begin(); itor != m_kAliveInstMap.end(); itor++)
-    {
+    for (auto itor = m_kAliveInstMap.begin(); itor != m_kAliveInstMap.end(); itor++) {
         uint32_t iIndex = itor->first;
         auto instance = Instance::FromAddress(itor->second);
 
@@ -125,11 +121,10 @@ void Helper::setTargetVid(uint32_t vid)
 
 void Helper::RenderCondition(bool enable)
 {
-    const BYTE enable_bytes[] = {0x90, 0xE9};
-    const BYTE disable_bytes[] = {0x0F, 0x85};
+    const BYTE enable_bytes[] = { 0x90, 0xE9 };
+    const BYTE disable_bytes[] = { 0x0F, 0x85 };
 
-    if (enable)
-    {
+    if (enable) {
         Memory::PatchBytes(Globals::Get()->RenderCondition, enable_bytes, sizeof(enable_bytes));
         return;
     }
@@ -165,8 +160,7 @@ bool Helper::ClearRam()
     device->SetViewport(&vp);
 
     // Restore state
-    if (state_block)
-    {
+    if (state_block) {
         state_block->Apply();
         state_block->Release();
     }
@@ -174,12 +168,12 @@ bool Helper::ClearRam()
     // Clear working set
     HANDLE process = GetCurrentProcess();
     SetProcessWorkingSetSize(process, -1, -1);
-    
+
     // Try to minimize the working set
-    SIZE_T minWS = 8 * 1024 * 1024;  // 8 MB minimum
+    SIZE_T minWS = 8 * 1024 * 1024; // 8 MB minimum
     SIZE_T maxWS = 128 * 1024 * 1024; // 128 MB maximum
     SetProcessWorkingSetSize(process, minWS, maxWS);
-    
+
     LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Device test completed");
     return true;
 }

@@ -1,9 +1,10 @@
 #include "FarmBot.h"
-#include "core/ClientApp.h"
-#include "hack/instance/Instance.h"
-#include "hack/helper/Helper.h"
+
 #include <algorithm>
 
+#include "core/ClientApp.h"
+#include "hack/helper/Helper.h"
+#include "hack/instance/Instance.h"
 
 bool FarmBot::m_FixedRange = false;
 Math::Vector3 FarmBot::m_FixedRangePos;
@@ -16,26 +17,25 @@ Instance FarmBot::getAttackableMob(float distance, MobType targetTypes) {
 
     auto mainActorPos = mainActor.GetPixelPosition();
     auto mobList = Helper::getMobList(targetTypes);
-    
+
     if (mobList.empty()) {
         return Instance(0);
     }
-    
+
     if (mobList.size() > 1) {
         std::sort(mobList.begin(), mobList.end(), &Helper::CompareInstances);
-    }  
+    }
 
     for (const auto& mob : mobList) {
         auto mobPos = mob.GetPixelPosition();
-        float mobDistance = m_FixedRange ? 
-            m_FixedRangePos.DistanceTo(mobPos) : 
-            mainActorPos.DistanceTo(mobPos);
+        float mobDistance = m_FixedRange ? m_FixedRangePos.DistanceTo(mobPos)
+                                         : mainActorPos.DistanceTo(mobPos);
 
         if (mobDistance <= distance) {
             return mob;
         }
     }
-    
+
     return Instance(0);
 }
 
@@ -50,28 +50,28 @@ void FarmBot::Loop() {
     const auto& settings = s_App->GetSettings().FarmBot;
     Helper::RenderCondition(settings.RenderSkip);
 
-    if (settings.ClearRam)
-    {
+    if (settings.ClearRam) {
         Helper::ClearRam();
     }
 
     if (!settings.FarmBotStatus) {
-        if(LastMob.GetAddress()){ LastMob = Instance{0}; }
+        if (LastMob.GetAddress()) {
+            LastMob = Instance{0};
+        }
         return;
     }
 
-    if(!Helper::GetMainActor().IsValid()){
+    if (!Helper::GetMainActor().IsValid()) {
         return;
     }
 
-    if(!LastMob.GetAddress() || LastMob.IsDead()){
+    if (!LastMob.GetAddress() || LastMob.IsDead()) {
         Instance mob = getAttackableMob(settings.AreaSize, settings.TargetTypes);
         LOG_INFO(LOG_COMPONENT_FARMBOT, "mob vid " << mob.GetVID());
         LOG_INFO(LOG_COMPONENT_FARMBOT, "mob name " << mob.GetName());
         Helper::setTargetVid(mob.GetVID());
         LastMob = mob;
-    }
-    else {
+    } else {
         Helper::setTargetVid(LastMob.GetVID());
     }
 

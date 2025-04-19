@@ -1,53 +1,56 @@
 #pragma once
 
-#include <string>
-#include <memory>
-#include <imgui.h>
 #include "../Application.h"
 #include "../Renderer.h"
+#include <imgui.h>
+#include <memory>
+#include <string>
 
-namespace UI
-{
-    namespace Views
-    {
+namespace UI {
+namespace Views {
 
-        class IViewState;
+    class IViewState;
 
-        class View
-        {
-        public:
-            View(Application *app, Renderer *renderer);
-            virtual ~View() = default;
+    class View {
+    public:
+        View(Application* app, Renderer* renderer);
+        virtual ~View() = default;
 
-            virtual void Update() = 0;
-            virtual void Render() = 0;
+        virtual void Update() = 0;
+        virtual void Render() = 0;
 
-            virtual const char *GetViewId() const = 0;
-            virtual std::unique_ptr<IViewState> CreateState() = 0;
+        virtual const char* GetViewId() const = 0;
+        virtual std::unique_ptr<IViewState> CreateState() = 0;
 
-            const std::string &GetName() const { return m_Name; }
+        const std::string& GetName() const { return m_Name; }
 
-            static const char *GetStaticViewId() { return "View"; }
+        static const char* GetStaticViewId() { return "View"; }
 
-        protected:
-            Application *m_App;
-            Renderer *m_Renderer;
-            std::string m_Name;
+    protected:
+        Application* m_App;
+        Renderer* m_Renderer;
+        std::string m_Name;
 
-            void RenderTitleBar(const char *title, bool showExitButton = true);
+        void RenderTitleBar(const char* title, bool showExitButton = true);
 
-        protected:
-            bool m_IsDragging = false;
-            float m_LastMouseX = 0.0f;
-            float m_LastMouseY = 0.0f;
-        };
+    private:
+        void RenderInjectModal();
+        bool TryInject(const char* processName, DWORD pid);
 
-        class IViewState
-        {
-        public:
-            virtual ~IViewState() = default;
-            virtual void Reset() = 0;
-        };
+        bool m_IsDragging = false;
+        float m_LastMouseX = 0.0f;
+        float m_LastMouseY = 0.0f;
+        bool m_ShowInjectModal = false;
 
-    }
+        std::string m_LastError;
+        bool m_UseProcessName = true;
+    };
+
+    class IViewState {
+    public:
+        virtual ~IViewState() = default;
+        virtual void Reset() = 0;
+    };
+
+}
 }

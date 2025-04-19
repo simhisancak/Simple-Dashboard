@@ -1,9 +1,9 @@
 #pragma once
 
-#include <dxgi.h>
-#include <d3d11.h>
-#include <memory>
 #include "Window.h"
+#include <d3d11.h>
+#include <dxgi.h>
+#include <memory>
 
 class Renderer {
 public:
@@ -27,4 +27,4 @@ private:
     ID3D11DeviceContext* m_DeviceContext = nullptr;
     IDXGISwapChain* m_SwapChain = nullptr;
     ID3D11RenderTargetView* m_RenderTargetView = nullptr;
-}; 
+};

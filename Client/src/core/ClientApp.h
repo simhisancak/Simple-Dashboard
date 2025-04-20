@@ -1,21 +1,20 @@
 #pragma once
 
-#include <windows.h>
-#include <string>
-#include <memory>
-#include <Psapi.h>
-#include "network/Network.h"
-#include "common/TaskManager.hpp"
 #include "PacketTypes.h"
+#include "common/TaskManager.hpp"
 #include "hack/globals/Globals.h"
+#include "network/Network.h"
+#include <Psapi.h>
+#include <memory>
+#include <string>
+#include <windows.h>
 
 constexpr int MEMORY_UPDATE_INTERVAL_MS = 250;
 constexpr int SERVER_SYNC_INTERVAL_MS = 500;
 
-constexpr int FARMBOT_INTERVAL_MS = 100;
+constexpr int FARMBOT_INTERVAL_MS = 300;
 
-class ClientApp
-{
+class ClientApp {
 public:
     ClientApp();
     ~ClientApp();
@@ -30,17 +29,17 @@ public:
 
     void ResetRegistration();
 
-    const Packets::SettingsState &GetSettings() const { return m_SettingsState; }
-    const Packets::MemoryState &GetMemoryState() const { return m_MemoryState; }
-    bool ProcessSettingsPacket(const Packets::SettingsResponsePacket &packet);
+    const Packets::SettingsState& GetSettings() const { return m_SettingsState; }
+    const Packets::MemoryState& GetMemoryState() const { return m_MemoryState; }
+    bool ProcessSettingsPacket(const Packets::SettingsResponsePacket& packet);
     void UpdateMemoryState();
-    void UpdateMemoryState(const Packets::MemoryState &newState);
+    void UpdateMemoryState(const Packets::MemoryState& newState);
 
     bool RequestSettings();
 
     std::string GetLastError() const;
 
-    Common::TaskManager *GetTaskManager() { return m_TaskManager.get(); }
+    Common::TaskManager* GetTaskManager() { return m_TaskManager.get(); }
 
 private:
     std::unique_ptr<Network::NetworkClient> m_NetworkClient;
@@ -56,6 +55,6 @@ private:
     Packets::MemoryState m_MemoryState;
     bool m_SettingsUpdated;
 
-    bool CreateRegisterPacket(Packets::RegisterPacket &packet);
-    void SetLastError(const std::string &error);
+    bool CreateRegisterPacket(Packets::RegisterPacket& packet);
+    void SetLastError(const std::string& error);
 };

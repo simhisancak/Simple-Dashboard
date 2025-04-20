@@ -1,6 +1,6 @@
 ---
 Language: Cpp
-BasedOnStyle: Google
+BasedOnStyle: WebKit
 ColumnLimit: 100
 BinPackArguments: false
 AlignOperands: Align
@@ -14,3 +14,4 @@ PenaltyBreakBeforeFirstCallParameter: 100
 BinPackParameters: false
 TabWidth: 4
 IndentWidth: 4
+BreakBeforeBraces: Attach

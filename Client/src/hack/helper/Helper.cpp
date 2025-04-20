@@ -1,9 +1,10 @@
 #include "Helper.h"
-#include "../globals/Globals.h"
+
 #include <algorithm>
 
-bool Helper::CompareInstances(const Instance& a, const Instance& b)
-{
+#include "../globals/Globals.h"
+
+bool Helper::CompareInstances(const Instance& a, const Instance& b) {
     auto posA = a.GetPixelPosition();
     auto posB = b.GetPixelPosition();
     auto mainActor = GetMainActor();
@@ -12,8 +13,7 @@ bool Helper::CompareInstances(const Instance& a, const Instance& b)
     return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
 }
 
-bool Helper::ComparePacketsInstances(const Packets::Instance& a, const Packets::Instance& b)
-{
+bool Helper::ComparePacketsInstances(const Packets::Instance& a, const Packets::Instance& b) {
     auto posA = a.Position;
     auto posB = b.Position;
     auto mainActor = GetMainActor();
@@ -22,19 +22,19 @@ bool Helper::ComparePacketsInstances(const Packets::Instance& a, const Packets::
     return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
 }
 
-Instance Helper::GetMainActor()
-{
-    return Instance::FromAddress(Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + 0xC));
+Instance Helper::GetMainActor() {
+    return Instance::FromAddress(
+        Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + 0xC));
 }
 
-TCharacterInstanceMap Helper::getAlivaInstMap()
-{
-    uintptr_t m_kAliveInstMap_p = Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + Globals::Get()->m_kAliveInstMapOffset);
+TCharacterInstanceMap Helper::getAlivaInstMap() {
+    uintptr_t m_kAliveInstMap_p = Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager
+                                                          + Globals::Get()->m_kAliveInstMapOffset);
     if (m_kAliveInstMap_p < 0x10000) {
         return TCharacterInstanceMap();
     }
 
-    uintptr_t m_kAliveInstMap_map = Memory::Read<uintptr_t>(m_kAliveInstMap_p + 4);
+    uintptr_t m_kAliveInstMap_map = Memory::Read<uintptr_t>(m_kAliveInstMap_p + 0x4);
     if (m_kAliveInstMap_map < 0x10000) {
         return TCharacterInstanceMap();
     }
@@ -42,8 +42,7 @@ TCharacterInstanceMap Helper::getAlivaInstMap()
     return *(TCharacterInstanceMap*)(m_kAliveInstMap_map);
 }
 
-std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes)
-{
+std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes) {
     std::vector<Packets::Instance> mobList;
     auto mainActor = GetMainActor();
 
@@ -81,8 +80,7 @@ std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes)
     return mobList;
 }
 
-std::vector<Instance> Helper::getMobList(MobType targetTypes)
-{
+std::vector<Instance> Helper::getMobList(MobType targetTypes) {
     std::vector<Instance> mobList;
     auto mainActor = GetMainActor();
 
@@ -114,13 +112,22 @@ std::vector<Instance> Helper::getMobList(MobType targetTypes)
     return mobList;
 }
 
-void Helper::setTargetVid(uint32_t vid)
-{
-    Memory::Write<uint32_t>(Globals::Get()->PythonPlayer + Globals::Get()->SetTargetOffset, vid);
+void Helper::setAttackVid(uint32_t vid) {
+    Memory::Write<uint32_t>(Globals::Get()->PythonPlayer + Globals::Get()->SetAttackVidOffset, vid);
 }
 
-void Helper::RenderCondition(bool enable)
-{
+void Helper::setAttackState(bool state) {
+    uint32_t _state = state ? 3 : 0;
+
+    Memory::Write<uint32_t>(Globals::Get()->PythonPlayer + Globals::Get()->SetAttackStateOffset,
+                            _state);
+}
+
+uint32_t Helper::getTargetVid() {
+    return Memory::Read<uint32_t>(Globals::Get()->PythonPlayer + Globals::Get()->TargetVidOffset);
+}
+
+void Helper::RenderCondition(bool enable) {
     const BYTE enable_bytes[] = { 0x90, 0xE9 };
     const BYTE disable_bytes[] = { 0x0F, 0x85 };
 
@@ -132,48 +139,72 @@ void Helper::RenderCondition(bool enable)
     Memory::PatchBytes(Globals::Get()->RenderCondition, disable_bytes, sizeof(disable_bytes));
 }
 
-bool Helper::ClearRam()
-{
-    // Get device pointer similar to ImGui's approach
-    if (!Globals::Get()->D3D9Device)
-        return false;
-
-    LPDIRECT3DDEVICE9 device = nullptr;
-    device = *(LPDIRECT3DDEVICE9*)Globals::Get()->D3D9Device;
-    if (!device)
-        return false;
-
-    // Save current state
-    IDirect3DStateBlock9* state_block = nullptr;
-    device->CreateStateBlock(D3DSBT_ALL, &state_block);
-    if (state_block)
-        state_block->Capture();
-
-    // Simple viewport test
-    D3DVIEWPORT9 vp;
-    vp.X = 0;
-    vp.Y = 0;
-    vp.Width = 100;
-    vp.Height = 100;
-    vp.MinZ = 0.0f;
-    vp.MaxZ = 1.0f;
-    device->SetViewport(&vp);
-
-    // Restore state
-    if (state_block) {
-        state_block->Apply();
-        state_block->Release();
-    }
-
-    // Clear working set
+bool Helper::ClearRam() {
     HANDLE process = GetCurrentProcess();
     SetProcessWorkingSetSize(process, -1, -1);
 
-    // Try to minimize the working set
     SIZE_T minWS = 8 * 1024 * 1024; // 8 MB minimum
     SIZE_T maxWS = 128 * 1024 * 1024; // 128 MB maximum
     SetProcessWorkingSetSize(process, minWS, maxWS);
 
-    LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Device test completed");
+    LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Ram cleared");
     return true;
+}
+
+std::vector<Math::Vector3> Helper::DivideTwoPointsByDistance(float distance,
+                                                             Math::Vector3 pointStart,
+                                                             Math::Vector3 pointEnd) {
+    std::vector<Math::Vector3> points;
+    float totalDistance = pointStart.DistanceTo(pointEnd);
+
+    if (totalDistance <= distance) {
+        points.push_back(pointEnd);
+        return points;
+    }
+
+    int steps = static_cast<int>(totalDistance / distance);
+    float stepRatio = distance / totalDistance;
+
+    for (int i = 1; i <= steps; i++) {
+        points.push_back(pointStart + (pointEnd - pointStart) * (stepRatio * i));
+    }
+
+    if (steps * distance < totalDistance) {
+        points.push_back(pointEnd);
+    }
+
+    return points;
+}
+
+void Helper::SendAttackPacket(uint32_t vid) {
+    uintptr_t netptr = Globals::Get()->PythonNetworkStream;
+    uintptr_t attackcall = Globals::Get()->SendAttackPacket;
+
+    __asm {
+        mov ecx, netptr
+        push vid
+        push 0
+        call attackcall
+    }
+}
+
+void Helper::SendCharacterStatePacket(Math::Vector3* pos,
+                                      float rot,
+                                      uint32_t eFunc,
+                                      uint32_t uArg) {
+    DWORD sendstatecall = Globals::Get()->SendCharacterStatePacket;
+    DWORD netptr = Globals::Get()->PythonNetworkStream;
+    Math::Vector3 _pos = *pos;
+    _pos.x = _pos.x * 100.0f;
+    _pos.y = _pos.y * 100.0f;
+
+    __asm {
+        mov ecx, netptr
+        push uArg
+        push eFunc
+        push rot
+        lea eax, _pos
+        push eax
+        call sendstatecall
+    }
 }

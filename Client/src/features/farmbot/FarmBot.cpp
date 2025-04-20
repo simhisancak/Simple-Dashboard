@@ -1,6 +1,7 @@
 #include "FarmBot.h"
 
 #include <algorithm>
+#include <chrono>
 
 #include "core/ClientApp.h"
 #include "hack/helper/Helper.h"
@@ -8,6 +9,10 @@
 
 bool FarmBot::m_FixedRange = false;
 Math::Vector3 FarmBot::m_FixedRangePos;
+Instance LastMob = Instance { 0 };
+
+// Add static variable for timing
+static auto lastWaitHackTime = std::chrono::steady_clock::now();
 
 Instance FarmBot::getAttackableMob(float distance, MobType targetTypes) {
     auto mainActor = Helper::GetMainActor();
@@ -39,7 +44,84 @@ Instance FarmBot::getAttackableMob(float distance, MobType targetTypes) {
     return Instance(0);
 }
 
-Instance LastMob = Instance{0};
+void FarmBot::WaitHack(MobType targetTypes) {
+    const float distance = 8.0f;
+    auto mainActor = Helper::GetMainActor();
+    if (!mainActor.IsValid()) {
+        return;
+    }
+
+    auto mainActorPos = mainActor.GetPixelPosition();
+    auto mobList = Helper::getMobList(targetTypes);
+
+    if (mobList.empty()) {
+        return;
+    }
+
+    if (mobList.size() > 1) {
+        std::sort(mobList.begin(), mobList.end(), &Helper::CompareInstances);
+    }
+
+    uint32_t count = 0;
+
+    for (const auto& mob : mobList) {
+        auto mobPos = mob.GetPixelPosition();
+        float mobDistance = mainActorPos.DistanceTo(mobPos);
+
+        if (mobDistance <= distance) {
+            Helper::SendAttackPacket(mob.GetVID());
+            Sleep(20);
+        }
+    }
+}
+
+void FarmBot::RangeDamage(MobType targetTypes, float distance) {
+    auto mainActor = Helper::GetMainActor();
+    if (!mainActor.IsValid()) {
+        return;
+    }
+
+    auto mainActorPos = mainActor.GetPixelPosition();
+    auto mobList = Helper::getMobList(targetTypes);
+
+    if (mobList.empty()) {
+        return;
+    }
+
+    if (mobList.size() > 1) {
+        std::sort(mobList.begin(), mobList.end(), &Helper::CompareInstances);
+    }
+
+    uint32_t count = 0;
+
+    for (const auto& mob : mobList) {
+        auto mobPos = mob.GetPixelPosition();
+        float mobDistance = mainActorPos.DistanceTo(mobPos);
+
+        if (mobDistance <= distance && count < 10) {
+            count++;
+
+            if (mobDistance >= 6) {
+                auto m_points = Helper::DivideTwoPointsByDistance(4, mainActorPos, mobPos);
+                for (auto& point : m_points) {
+                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
+                    Sleep(3);
+                }
+            }
+
+            Helper::SendAttackPacket(mob.GetVID());
+
+            if (mobDistance >= 6) {
+                auto p_points = Helper::DivideTwoPointsByDistance(4, mobPos, mainActorPos);
+                for (auto& point : p_points) {
+                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
+                    Sleep(3);
+                }
+            }
+            Sleep(30);
+        }
+    }
+}
 
 void FarmBot::Loop() {
     if (!s_App) {
@@ -54,9 +136,21 @@ void FarmBot::Loop() {
         Helper::ClearRam();
     }
 
+    if (settings.WaitHack) {
+        /*auto currentTime = std::chrono::steady_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+            currentTime - lastWaitHackTime);
+
+        if (elapsedTime.count() >= 200) {
+            RangeDamage(settings.TargetTypes, settings.AreaSize);
+            lastWaitHackTime = currentTime;
+        }*/
+        RangeDamage(settings.TargetTypes, settings.AreaSize);
+    }
+
     if (!settings.FarmBotStatus) {
         if (LastMob.GetAddress()) {
-            LastMob = Instance{0};
+            LastMob = Instance { 0 };
         }
         return;
     }
@@ -69,10 +163,12 @@ void FarmBot::Loop() {
         Instance mob = getAttackableMob(settings.AreaSize, settings.TargetTypes);
         LOG_INFO(LOG_COMPONENT_FARMBOT, "mob vid " << mob.GetVID());
         LOG_INFO(LOG_COMPONENT_FARMBOT, "mob name " << mob.GetName());
-        Helper::setTargetVid(mob.GetVID());
+        Helper::setAttackVid(mob.GetVID());
+        Helper::setAttackState(true);
         LastMob = mob;
     } else {
-        Helper::setTargetVid(LastMob.GetVID());
+        Helper::setAttackVid(LastMob.GetVID());
+        Helper::setAttackState(true);
     }
 
     if (settings.AutoLoot) {

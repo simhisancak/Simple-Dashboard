@@ -1,14 +1,16 @@
 #pragma once
+#include <Windows.h>
+#include <d3d9.h>
+#include <winternl.h>
+
+#include <map>
+
 #include "../instance/Instance.h"
 #include "Instance.h"
 #include "common/Logger.h"
 #include "features/Farmbot.h"
-#include <Windows.h>
-#include <d3d9.h>
-#include <map>
-#include <winternl.h>
 
-using TCharacterInstanceMap = std::map<uint32_t, uintptr_t>;
+typedef std::map<uint32_t, uintptr_t> TCharacterInstanceMap;
 
 class Helper {
 public:
@@ -17,25 +19,15 @@ public:
     static Instance GetMainActor();
     static std::vector<Instance> getMobList(MobType targetTypes);
     static std::vector<Packets::Instance> getMobs(MobType targetTypes);
-    static void setTargetVid(uint32_t vid);
+    static void setAttackVid(uint32_t vid);
+    static void setAttackState(bool state);
+    static uint32_t getTargetVid();
     static TCharacterInstanceMap getAlivaInstMap();
     static void RenderCondition(bool enable);
     static bool ClearRam();
-
-private:
-#define ProcessQuotaLimits 1
-
-    typedef struct _PROCESS_QUOTA_LIMITS {
-        SIZE_T MinimumWorkingSetSize;
-        SIZE_T MaximumWorkingSetSize;
-        SIZE_T PagedPoolLimit;
-        SIZE_T NonPagedPoolLimit;
-        SIZE_T TimeLimit;
-    } PROCESS_QUOTA_LIMITS, *PPROCESS_QUOTA_LIMITS;
-
-    typedef NTSTATUS(NTAPI* pNtSetInformationProcess)(
-        IN HANDLE ProcessHandle,
-        IN ULONG ProcessInformationClass,
-        IN PVOID ProcessInformation,
-        IN ULONG ProcessInformationLength);
+    static std::vector<Math::Vector3>
+    DivideTwoPointsByDistance(float distance, Math::Vector3 pointStart, Math::Vector3 pointEnd);
+    static void SendAttackPacket(uint32_t vid);
+    static void
+    SendCharacterStatePacket(Math::Vector3* pos, float rot, uint32_t eFunc, uint32_t uArg);
 };

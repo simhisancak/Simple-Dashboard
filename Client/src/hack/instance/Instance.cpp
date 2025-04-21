@@ -1,4 +1,5 @@
 #include "Instance.h"
+#include <windows.h>
 
 uint32_t Instance::GetVID() const {
     if (m_Address < 0x1000) {
@@ -32,18 +33,18 @@ bool Instance::IsDead() const {
     return Memory::Read<bool>(m_Address + Globals::Get()->IsDeadOffset);
 }
 
-const char* Instance::GetName() const {
-    const char* name = "";
+std::string Instance::GetName() const {
     if (!IsValid()) {
-        return name;
+        return "";
     }
 
-    uintptr_t nameAddress = m_Address + Globals::Get()->NameOffset;
-    __asm {
-        lea eax, [nameAddress]
-        mov eax, [eax]
-        mov name, eax
-    }
+    const char* ansiStr = reinterpret_cast<const char*>(m_Address + Globals::Get()->NameOffset);
 
-    return name;
+    wchar_t wideBuffer[65];
+    MultiByteToWideChar(1254, 0, ansiStr, -1, wideBuffer, 65);
+
+    char utf8Buffer[195];
+    WideCharToMultiByte(CP_UTF8, 0, wideBuffer, -1, utf8Buffer, sizeof(utf8Buffer), NULL, NULL);
+
+    return std::string(utf8Buffer);
 }

@@ -43,6 +43,14 @@ public:
 
         PythonNetworkStream = Memory::Read<uintptr_t>(PythonNetworkStream);
 
+        ItemManager
+            = Memory::FindAndResolvePointer("metin2client.exe",
+                                            "8b 0d ? ? ? ? e8 ? ? ? ? a1 ? ? ? ? 89 45 ? 8b 4d ? "
+                                            "e8 ? ? ? ? 89 45 ? 83 7d ? ? 75 ? 0f b7 4d");
+        ItemManager = Memory::Read<uintptr_t>(ItemManager);
+
+        //--------------------------------
+
         RenderCondition = Memory::FindPattern("metin2client.exe",
                                               "83 3d ? ? ? ? ? 0f 85 ? ? ? ? 51");
         RenderCondition = RenderCondition + 0x7;
@@ -59,8 +67,12 @@ public:
     uint32_t OffsetBase = 0x2C4;
     uint32_t NameOffset = 0x14;
     uint32_t m_kAliveInstMapOffset = 0x20;
+
     uint32_t SetAttackVidOffset = 0x349AC;
     uint32_t SetAttackStateOffset = 0x64;
+
+    uint32_t ItemMapOffset = 0x4;
+    uint32_t ItemNameOffset = 0xED;
 
     uint32_t TargetVidOffset = 0x34A50;
 
@@ -74,6 +86,7 @@ public:
     uintptr_t PythonCharacterManager = 0;
     uintptr_t PythonPlayer = 0;
     uintptr_t PythonNetworkStream = 0;
+    uintptr_t ItemManager = 0;
 
     uintptr_t RenderCondition = 0;
 

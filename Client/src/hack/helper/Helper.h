@@ -10,7 +10,29 @@
 #include "common/Logger.h"
 #include "features/Farmbot.h"
 
+typedef struct SItemTable_r156 {
+    DWORD dwVnum;
+    DWORD dwVnumRange;
+    char szName[24 + 1];
+    char szLocaleName[24 + 1];
+    BYTE bType;
+    BYTE bSubType;
+    BYTE bWeight;
+    BYTE bSize;
+    DWORD dwAntiFlags;
+    DWORD dwFlags;
+    DWORD dwWearFlags;
+    DWORD dwImmuneFlag;
+    DWORD dwIBuyItemPrice;
+    DWORD dwISellItemPrice;
+} TItemTable;
+
+typedef struct CItemData {
+    TItemTable m_ItemTable;
+} TCItemData;
+
 typedef std::map<uint32_t, uintptr_t> TCharacterInstanceMap;
+typedef std::map<uint32_t, uintptr_t> TItemMap;
 
 class Helper {
 public:
@@ -30,4 +52,5 @@ public:
     static void SendAttackPacket(uint32_t vid);
     static void
     SendCharacterStatePacket(Math::Vector3* pos, float rot, uint32_t eFunc, uint32_t uArg);
+    static TItemMap GetItemList();
 };

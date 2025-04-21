@@ -49,6 +49,7 @@ set(SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../shared)
 set(FEATURE_FILES
     src/features/Features.cpp
     src/features/farmbot/FarmBot.cpp
+    src/features/main/Main.cpp
 )
 
 # Network kaynak dosyaları
@@ -65,6 +66,7 @@ set(COMMON_FILES
 set(HACK_FILES
     src/hack/globals/Globals.cpp
     src/hack/instance/Instance.cpp
+    src/hack/item/Item.cpp
     src/hack/helper/Helper.cpp
 )
 

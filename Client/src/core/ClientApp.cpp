@@ -7,14 +7,14 @@
 #include "common/Logger.h"
 #include "features/Features.h"
 #include "features/farmbot/FarmBot.h"
-
+#include "features/main/Main.h"
 ClientApp::ClientApp()
-    : m_NetworkClient(std::make_unique<Network::NetworkClient>(this)),
-      m_TaskManager(std::make_unique<Common::TaskManager>()),
-      m_Registered(false),
-      m_ServerIP("127.0.0.1"),
-      m_ServerPort(8888),
-      m_SettingsUpdated(false) {
+    : m_NetworkClient(std::make_unique<Network::NetworkClient>(this))
+    , m_TaskManager(std::make_unique<Common::TaskManager>())
+    , m_Registered(false)
+    , m_ServerIP("127.0.0.1")
+    , m_ServerPort(8888)
+    , m_SettingsUpdated(false) {
     LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Creating client application");
     LOG_INFO(LOG_COMPONENT_CLIENTAPP,
              "Server configuration - " << m_ServerIP << ":" << m_ServerPort);
@@ -30,7 +30,7 @@ bool ClientApp::Initialize() {
         return false;
     }
 
-    MODULEINFO moduleInfo = {0};
+    MODULEINFO moduleInfo = { 0 };
     HMODULE hModule = GetModuleHandle(NULL);
 
     if (hModule
@@ -44,6 +44,7 @@ bool ClientApp::Initialize() {
     m_MemoryState.hproc = GetCurrentProcess();
     Globals::Get()->Initialize();
     Features::Initialize<FarmBot>(this, FARMBOT_INTERVAL_MS);
+    Features::Initialize<Main>(this, MAIN_INTERVAL_MS);
 
     m_TaskManager->ScheduleRecurringTask([this]() { UpdateMemoryState(); },
                                          std::chrono::milliseconds(MEMORY_UPDATE_INTERVAL_MS));

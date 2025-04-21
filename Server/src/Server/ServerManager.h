@@ -53,10 +53,10 @@ struct ClientInfo {
         , recvBuffer(new char[MAX_BUFFER_SIZE])
         , recvBufferSize(0)
         , recvBufferPos(0)
-    {
+        , settings()
+        , memoryInfo() {
         lastHealthCheck = std::chrono::steady_clock::now();
         lastActivity = lastHealthCheck;
-        ZeroMemory(&settings, sizeof(settings));
     }
 
     ClientInfo(const ClientInfo&) = delete;
@@ -64,42 +64,36 @@ struct ClientInfo {
     ClientInfo(ClientInfo&&) = default;
     ClientInfo& operator=(ClientInfo&&) = default;
 
-    void UpdateActivity()
-    {
+    void UpdateActivity() {
         lastActivity = std::chrono::steady_clock::now();
         lastHealthCheck = lastActivity;
     }
 
-    bool IsTimedOut() const
-    {
+    bool IsTimedOut() const {
         auto now = std::chrono::steady_clock::now();
-        auto healthCheckDiff = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - lastHealthCheck)
-                                   .count();
-        auto activityDiff = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - lastActivity)
-                                .count();
+        auto healthCheckDiff
+            = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastHealthCheck).count();
+        auto activityDiff
+            = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastActivity).count();
 
-        return !isActive || healthCheckDiff > HEALTH_CHECK_TIMEOUT_MS || activityDiff > (HEALTH_CHECK_TIMEOUT_MS * 2);
+        return !isActive || healthCheckDiff > HEALTH_CHECK_TIMEOUT_MS
+               || activityDiff > (HEALTH_CHECK_TIMEOUT_MS * 2);
     }
 };
 
-template <typename T>
-class MessageQueue {
+template <typename T> class MessageQueue {
     std::queue<T> queue;
     mutable std::mutex mutex;
     std::condition_variable cv;
 
 public:
-    void push(T&& item)
-    {
+    void push(T&& item) {
         std::lock_guard<std::mutex> lock(mutex);
         queue.push(std::move(item));
         cv.notify_one();
     }
 
-    bool try_pop(T& item)
-    {
+    bool try_pop(T& item) {
         std::lock_guard<std::mutex> lock(mutex);
         if (queue.empty())
             return false;

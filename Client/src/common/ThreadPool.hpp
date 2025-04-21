@@ -1,14 +1,14 @@
 #pragma once
 
-#include <vector>
-#include <queue>
-#include <thread>
-#include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <future>
 #include <memory>
-#include <atomic>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <vector>
 
 namespace Common {
 
@@ -22,9 +22,7 @@ public:
                     std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(m_QueueMutex);
-                        m_Condition.wait(lock, [this] {
-                            return m_Stop || !m_Tasks.empty();
-                        });
+                        m_Condition.wait(lock, [this] { return m_Stop || !m_Tasks.empty(); });
 
                         if (m_Stop && m_Tasks.empty()) {
                             return;
@@ -39,14 +37,13 @@ public:
         }
     }
 
-    template<typename F, typename... Args>
-    auto EnqueueTask(F&& f, Args&&... args) 
+    template <typename F, typename... Args>
+    auto EnqueueTask(F&& f, Args&&... args)
         -> std::future<typename std::invoke_result<F, Args...>::type> {
         using return_type = typename std::invoke_result<F, Args...>::type;
 
         auto task = std::make_shared<std::packaged_task<return_type()>>(
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-        );
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
         std::future<return_type> res = task->get_future();
         {
@@ -62,8 +59,7 @@ public:
     }
 
     // Schedule a recurring task with a specified interval
-    template<typename F>
-    void ScheduleRecurring(F&& f, std::chrono::milliseconds interval) {
+    template <typename F> void ScheduleRecurring(F&& f, std::chrono::milliseconds interval) {
         auto task = [f = std::forward<F>(f), interval, this]() {
             while (!m_Stop) {
                 f();

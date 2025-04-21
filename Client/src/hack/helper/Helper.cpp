@@ -51,9 +51,9 @@ std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes) {
 
     TCharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
 
-    for (auto itor = m_kAliveInstMap.begin(); itor != m_kAliveInstMap.end(); itor++) {
-        uint32_t iIndex = itor->first;
-        auto instance = Instance::FromAddress(itor->second);
+    for (const auto& Ins : m_kAliveInstMap) {
+        uint32_t iIndex = Ins.first;
+        auto instance = Instance::FromAddress(Ins.second);
         auto packet = Packets::Instance();
 
         if (!instance.IsValid() || instance.GetAddress() == mainActor.GetAddress())
@@ -89,9 +89,9 @@ std::vector<Instance> Helper::getMobList(MobType targetTypes) {
 
     TCharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
 
-    for (auto itor = m_kAliveInstMap.begin(); itor != m_kAliveInstMap.end(); itor++) {
-        uint32_t iIndex = itor->first;
-        auto instance = Instance::FromAddress(itor->second);
+    for (const auto& Ins : m_kAliveInstMap) {
+        uint32_t iIndex = Ins.first;
+        auto instance = Instance::FromAddress(Ins.second);
 
         if (!instance.IsValid() || instance.GetAddress() == mainActor.GetAddress())
             continue;
@@ -207,4 +207,19 @@ void Helper::SendCharacterStatePacket(Math::Vector3* pos,
         push eax
         call sendstatecall
     }
+}
+
+TItemMap Helper::GetItemList() {
+    uintptr_t m_ItemMap_p = Memory::Read<uintptr_t>(Globals::Get()->ItemManager
+                                                    + Globals::Get()->ItemMapOffset);
+    if (m_ItemMap_p < 0x10000) {
+        return TItemMap();
+    }
+
+    uintptr_t m_ItemMap = Memory::Read<uintptr_t>(m_ItemMap_p + 0x4);
+    if (m_ItemMap < 0x10000) {
+        return TItemMap();
+    }
+
+    return *(TItemMap*)(m_ItemMap);
 }

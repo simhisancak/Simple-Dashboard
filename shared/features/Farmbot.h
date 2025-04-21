@@ -12,12 +12,12 @@ struct FarmBotState {
     bool WaitHack;
 
     FarmBotState()
-        : FarmBotStatus(false),
-          AutoLoot(false),
-          AreaSize(0.0f),
-          TargetTypes(MobType::None),
-          RenderSkip(false),
-          ClearRam(false),
-          WaitHack(false) {}
+        : FarmBotStatus(false)
+        , AutoLoot(false)
+        , AreaSize(0.0f)
+        , TargetTypes(MobType::None)
+        , RenderSkip(false)
+        , ClearRam(false)
+        , WaitHack(false) { }
 };
-}  // namespace Packets
+} // namespace Packets

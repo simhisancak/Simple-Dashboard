@@ -41,6 +41,7 @@ set(SERVER_FILES
 
 set(CONTENT_FILES
     src/UI/Views/Dashboard/Content/MainContent.cpp
+    src/UI/Views/Dashboard/Content/Main/Main.cpp
     src/UI/Views/Dashboard/Content/FarmBot/FarmBot.cpp
     src/UI/Views/Dashboard/Content/SaveLoad/SaveLoad.cpp
 )

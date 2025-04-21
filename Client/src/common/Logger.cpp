@@ -11,25 +11,40 @@ void Logger::Initialize() {
     if (!s_Initialized) {
         if (LOG_CONSOLE) {
             FreeConsole();
-            
+
             if (AllocConsole()) {
+                // Set console code page to UTF-8
+                SetConsoleOutputCP(CP_UTF8);
+                SetConsoleCP(CP_UTF8);
+
                 FILE* pConIn = nullptr;
                 FILE* pConOut = nullptr;
                 FILE* pConErr = nullptr;
-                
+
                 freopen_s(&pConIn, "CONIN$", "r", stdin);
                 freopen_s(&pConOut, "CONOUT$", "w", stdout);
                 freopen_s(&pConErr, "CONOUT$", "w", stderr);
-                
+
+                // Set output stream to use UTF-8
+                std::locale::global(std::locale(""));
+                std::cout.imbue(std::locale());
+                std::wcout.imbue(std::locale());
+
                 std::cout.clear();
                 std::cerr.clear();
-                
+
+                // Enable virtual terminal processing for better Unicode support
+                DWORD consoleMode;
+                GetConsoleMode(s_ConsoleHandle, &consoleMode);
+                consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                SetConsoleMode(s_ConsoleHandle, consoleMode);
+
                 SetConsoleTitleA("Fracq Client Console");
-                
+
                 s_ConsoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-                
+
                 ShowWindow(GetConsoleWindow(), SW_SHOW);
-                
+
                 SetConsoleTextAttribute(s_ConsoleHandle, COLOR_INFO);
                 std::cout << "\n=== Fracq Client Console Initialized ===\n" << std::endl;
                 SetConsoleTextAttribute(s_ConsoleHandle, COLOR_DEFAULT);
@@ -41,7 +56,14 @@ void Logger::Initialize() {
             auto tm = *std::localtime(&now);
             char filename[64];
             strftime(filename, sizeof(filename), "fracq_%Y%m%d_%H%M%S.log", &tm);
-            s_LogFile.open(filename, std::ios::out | std::ios::app);
+            s_LogFile.open(filename, std::ios::out | std::ios::binary);
+
+            // Write UTF-8 BOM
+            unsigned char bom[] = { 0xEF, 0xBB, 0xBF };
+            s_LogFile.write(reinterpret_cast<char*>(bom), sizeof(bom));
+
+            // Set UTF-8 locale for the file stream
+            s_LogFile.imbue(std::locale(""));
         }
         s_Initialized = true;
     }
@@ -65,29 +87,31 @@ void Logger::Log(int level, int component, const std::string& msg) {
     const char* levelName;
     int color;
     switch (level) {
-        case LOG_LEVEL_DEBUG:
-            levelName = "DEBUG";
-            color = COLOR_DEBUG;
-            break;
-        case LOG_LEVEL_INFO:
-            levelName = "INFO ";
-            color = COLOR_INFO;
-            break;
-        case LOG_LEVEL_WARN:
-            levelName = "WARN ";
-            color = COLOR_WARN;
-            break;
-        case LOG_LEVEL_ERROR:
-            levelName = "ERROR";
-            color = COLOR_ERROR;
-            break;
-        default:
-            levelName = "?????";
-            color = COLOR_DEFAULT;
+    case LOG_LEVEL_DEBUG:
+        levelName = "DEBUG";
+        color = COLOR_DEBUG;
+        break;
+    case LOG_LEVEL_INFO:
+        levelName = "INFO ";
+        color = COLOR_INFO;
+        break;
+    case LOG_LEVEL_WARN:
+        levelName = "WARN ";
+        color = COLOR_WARN;
+        break;
+    case LOG_LEVEL_ERROR:
+        levelName = "ERROR";
+        color = COLOR_ERROR;
+        break;
+    default:
+        levelName = "?????";
+        color = COLOR_DEFAULT;
     }
 
     std::ostringstream logMessage;
-    logMessage << "[" << timestamp << "][" << levelName << "][" << GetComponentName(component) << "] " << msg;
+    std::string utf8Msg = ToUtf8(msg);
+    logMessage << "[" << timestamp << "][" << levelName << "][" << GetComponentName(component)
+               << "] " << utf8Msg;
 
     SetConsoleColor(color);
     std::cout << logMessage.str() << std::endl;
@@ -101,12 +125,18 @@ void Logger::Log(int level, int component, const std::string& msg) {
 
 const char* Logger::GetComponentName(int component) {
     switch (component) {
-        case LOG_COMPONENT_NETWORK: return "NETWORK";
-        case LOG_COMPONENT_CLIENTAPP: return "APP";
-        case LOG_COMPONENT_FARMBOT: return "FARMBOT";
-        case LOG_COMPONENT_CONSOLE: return "CONSOLE";
-        case LOG_COMPONENT_FEATURES: return "FEATURES";
-        default: return "UNKNOWN";
+    case LOG_COMPONENT_NETWORK:
+        return "NETWORK";
+    case LOG_COMPONENT_CLIENTAPP:
+        return "APP";
+    case LOG_COMPONENT_FARMBOT:
+        return "FARMBOT";
+    case LOG_COMPONENT_CONSOLE:
+        return "CONSOLE";
+    case LOG_COMPONENT_FEATURES:
+        return "FEATURES";
+    default:
+        return "UNKNOWN";
     }
 }
 

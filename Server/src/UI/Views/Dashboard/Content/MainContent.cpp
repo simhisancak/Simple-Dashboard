@@ -1,17 +1,19 @@
 #include "MainContent.h"
+#include "FarmBot/FarmBot.h"
+#include "Main/Main.h"
 #include "UI/Theme.h"
 #include <imgui.h>
+#include <memory>
 
 namespace UI {
 namespace Views {
 
-    DashboardMainContent::DashboardMainContent(Application* app)
-    {
+    DashboardMainContent::DashboardMainContent(Application* app) {
+        m_Contents.push_back(std::make_unique<Main>(app));
         m_Contents.push_back(std::make_unique<FarmBot>(app));
     }
 
-    void DashboardMainContent::Render(const DashboardContent* activeContent, int selectedPid)
-    {
+    void DashboardMainContent::Render(const DashboardContent* activeContent, int selectedPid) {
         if (!activeContent) {
             // Center the text using theme padding
             float textWidth = ImGui::CalcTextSize("Select a form from the header menu").x;

@@ -13,6 +13,7 @@ constexpr int MEMORY_UPDATE_INTERVAL_MS = 250;
 constexpr int SERVER_SYNC_INTERVAL_MS = 500;
 
 constexpr int FARMBOT_INTERVAL_MS = 300;
+constexpr int MAIN_INTERVAL_MS = 10;
 
 class ClientApp {
 public:

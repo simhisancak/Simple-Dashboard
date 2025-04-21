@@ -8,8 +8,9 @@ private:
     uintptr_t m_Address;
 
 public:
-    Instance(uintptr_t address) : m_Address(address) {}
-    
+    Instance(uintptr_t address)
+        : m_Address(address) { }
+
     bool IsValid() const { return GetVID() > 100; }
     uintptr_t GetAddress() const { return m_Address; }
 
@@ -17,9 +18,7 @@ public:
     Math::Vector3 GetPixelPosition() const;
     uint8_t GetType() const;
     bool IsDead() const;
-    const char* GetName() const;
+    std::string GetName() const;
 
-    static Instance FromAddress(uintptr_t address) {
-        return Instance(address);
-    }
-    };
+    static Instance FromAddress(uintptr_t address) { return Instance(address); }
+};

@@ -22,24 +22,33 @@ bool Helper::ComparePacketsInstances(const Packets::Instance& a, const Packets::
     return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
 }
 
+bool Helper::CompareGroundItems(const GroundItem& a, const GroundItem& b) {
+    auto posA = a.GetPixelPosition();
+    auto posB = b.GetPixelPosition();
+    auto mainActor = GetMainActor();
+    auto mainPos = mainActor.GetPixelPosition();
+
+    return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
+}
+
 Instance Helper::GetMainActor() {
     return Instance::FromAddress(
         Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + 0xC));
 }
 
-TCharacterInstanceMap Helper::getAlivaInstMap() {
+CharacterInstanceMap Helper::getAlivaInstMap() {
     uintptr_t m_kAliveInstMap_p = Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager
                                                           + Globals::Get()->m_kAliveInstMapOffset);
     if (m_kAliveInstMap_p < 0x10000) {
-        return TCharacterInstanceMap();
+        return CharacterInstanceMap();
     }
 
     uintptr_t m_kAliveInstMap_map = Memory::Read<uintptr_t>(m_kAliveInstMap_p + 0x4);
     if (m_kAliveInstMap_map < 0x10000) {
-        return TCharacterInstanceMap();
+        return CharacterInstanceMap();
     }
 
-    return *(TCharacterInstanceMap*)(m_kAliveInstMap_map);
+    return *reinterpret_cast<CharacterInstanceMap*>(m_kAliveInstMap_map);
 }
 
 std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes) {
@@ -49,7 +58,7 @@ std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes) {
     if (!mainActor.IsValid())
         return mobList;
 
-    TCharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
+    CharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
 
     for (const auto& Ins : m_kAliveInstMap) {
         uint32_t iIndex = Ins.first;
@@ -87,7 +96,7 @@ std::vector<Instance> Helper::getMobList(MobType targetTypes) {
     if (!mainActor.IsValid())
         return mobList;
 
-    TCharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
+    CharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
 
     for (const auto& Ins : m_kAliveInstMap) {
         uint32_t iIndex = Ins.first;
@@ -192,8 +201,8 @@ void Helper::SendCharacterStatePacket(Math::Vector3* pos,
                                       float rot,
                                       uint32_t eFunc,
                                       uint32_t uArg) {
-    DWORD sendstatecall = Globals::Get()->SendCharacterStatePacket;
-    DWORD netptr = Globals::Get()->PythonNetworkStream;
+    uintptr_t sendstatecall = Globals::Get()->SendCharacterStatePacket;
+    uintptr_t netptr = Globals::Get()->PythonNetworkStream;
     Math::Vector3 _pos = *pos;
     _pos.x = _pos.x * 100.0f;
     _pos.y = _pos.y * 100.0f;
@@ -209,17 +218,80 @@ void Helper::SendCharacterStatePacket(Math::Vector3* pos,
     }
 }
 
-TItemMap Helper::GetItemList() {
+ItemMap Helper::getItemMap() {
     uintptr_t m_ItemMap_p = Memory::Read<uintptr_t>(Globals::Get()->ItemManager
                                                     + Globals::Get()->ItemMapOffset);
     if (m_ItemMap_p < 0x10000) {
-        return TItemMap();
+        return ItemMap();
     }
 
     uintptr_t m_ItemMap = Memory::Read<uintptr_t>(m_ItemMap_p + 0x4);
     if (m_ItemMap < 0x10000) {
-        return TItemMap();
+        return ItemMap();
     }
 
-    return *(TItemMap*)(m_ItemMap);
+    return *reinterpret_cast<ItemMap*>(m_ItemMap);
+}
+
+std::vector<Item> Helper::GetItemList() {
+    ItemMap itemMap = getItemMap();
+    std::vector<Item> itemList;
+
+    for (const auto& Itm : itemMap) {
+        Item item = Item::FromAddress(Itm.second);
+        if (!item.IsValid())
+            continue;
+
+        itemList.push_back(item);
+    }
+
+    return itemList;
+}
+
+GroundItemMap Helper::getGroundItemMap() {
+    uintptr_t m_GroundItemMap_p = Memory::Read<uintptr_t>(Globals::Get()->PythonItem
+                                                          + Globals::Get()->GroundItemMapOffset);
+    if (m_GroundItemMap_p < 0x10000) {
+        return GroundItemMap();
+    }
+
+    uintptr_t m_GroundItemMap = Memory::Read<uintptr_t>(m_GroundItemMap_p + 0x4);
+    if (m_GroundItemMap < 0x10000) {
+        return GroundItemMap();
+    }
+
+    return *reinterpret_cast<GroundItemMap*>(m_GroundItemMap);
+}
+
+std::vector<GroundItem> Helper::getGroundItemList() {
+    auto mainActor = GetMainActor();
+
+    GroundItemMap groundItemMap = getGroundItemMap();
+    std::vector<GroundItem> groundItemList;
+
+    for (const auto& item : groundItemMap) {
+        GroundItem groundItem = GroundItem::FromAddress(item.second, item.first);
+        if (!groundItem.IsValid())
+            continue;
+
+        if (groundItem.GetOwnership().length() > 0
+            && groundItem.GetOwnership() != mainActor.GetName()) {
+            continue;
+        }
+
+        groundItemList.push_back(groundItem);
+    }
+
+    return groundItemList;
+}
+
+void Helper::SendClickItemPacket(uint32_t vid) {
+    uintptr_t pythonplayer = Globals::Get()->PythonPlayer;
+    uintptr_t clickitemcall = Globals::Get()->SendClickItemPacket;
+
+    __asm {
+        mov ecx, pythonplayer
+        push vid
+        call clickitemcall
+    }
 }

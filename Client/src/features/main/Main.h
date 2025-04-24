@@ -18,6 +18,7 @@ public:
 private:
     static void WaitHack();
     static void RangeDamage();
+    static void PickupGroundItems();
 
     static Packets::MainState m_settings;
 };

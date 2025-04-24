@@ -11,6 +11,7 @@ struct MainState {
     bool RenderSkip;
     bool ClearRam;
     bool DamageEnabled;
+    bool Pickup;
     DamageType DamageType;
     uint32_t DamageDelay;
     uint32_t DamageCount;
@@ -22,6 +23,7 @@ struct MainState {
         , RenderSkip(false)
         , ClearRam(false)
         , DamageEnabled(false)
+        , Pickup(false)
         , DamageType(DamageType::None)
         , DamageDelay(200)
         , DamageCount(3)

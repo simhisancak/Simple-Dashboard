@@ -159,7 +159,7 @@ namespace Views {
         ImGui::OpenPopup("Inject Process");
 
         static bool useProcessName = true;
-        static char processNameBuffer[256] = "";
+        static char processNameBuffer[256] = "metin2client.exe";
         static char pidBuffer[32] = "";
         static bool hasError = false;
 

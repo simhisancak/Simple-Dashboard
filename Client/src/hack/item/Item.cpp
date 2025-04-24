@@ -2,7 +2,7 @@
 #include <windows.h>
 
 std::string Item::GetName() const {
-    if (!IsValid()) {
+    if (m_Address < 0x1000) {
         return "";
     }
 

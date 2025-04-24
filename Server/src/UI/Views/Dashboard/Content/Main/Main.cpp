@@ -8,7 +8,7 @@
 
 namespace UI {
 namespace Views {
-    const MobTypeUI MOB_TYPES[] = { { "Normal Mobs", MobType::Normal },
+    const MobTypeUI MOB_TYPES[] = { { "Mobs", MobType::Normal },
                                     { "Metin Stones", MobType::Metin } };
 
     Main::Main(Application* app)
@@ -35,7 +35,7 @@ namespace Views {
         auto& settings = client->settings.Main;
 
         const float inputWidth = 60.0f;
-        const float labelWidth = 40.0f;
+        const float labelWidth = 60.0f;
         const float columnWidth = 160.0f;
         const float spacing = 10.0f;
 
@@ -136,12 +136,13 @@ namespace Views {
 
         // Bot Settings row
         {
-            ImGui::AlignTextToFramePadding();
             ImGui::Text("Optimize");
             ImGui::SameLine(labelWidth);
             ImGui::Checkbox("Render", &settings.RenderSkip);
-            ImGui::SameLine(columnWidth);
+            ImGui::SameLine(columnWidth + 80.0f);
             ImGui::Checkbox("Ram", &settings.ClearRam);
+            ImGui::SameLine(columnWidth * 2 + 80.0f);
+            ImGui::Checkbox("Pickup", &settings.Pickup);
         }
 
         ImGui::Spacing();

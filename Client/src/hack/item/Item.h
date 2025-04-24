@@ -12,7 +12,7 @@ public:
     Item(uintptr_t address)
         : m_Address(address) { }
 
-    bool IsValid() const { return m_Address > 0x1000; }
+    bool IsValid() const { return GetName() != ""; }
 
     std::string GetName() const;
 

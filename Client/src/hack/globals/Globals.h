@@ -49,6 +49,12 @@ public:
                                             "e8 ? ? ? ? 89 45 ? 83 7d ? ? 75 ? 0f b7 4d");
         ItemManager = Memory::Read<uintptr_t>(ItemManager);
 
+        PythonItem = Memory::FindAndResolvePointer(
+            "metin2client.exe",
+            "a1 ? ? ? ? 89 45 ? 8d 4d ? 51 8b 55 ? 52 8b 4d ? e8 ? ? ? ? 0f b6 ? 85 c0 75 ? e9",
+            1);
+        PythonItem = Memory::Read<uintptr_t>(PythonItem);
+
         //--------------------------------
 
         RenderCondition = Memory::FindPattern("metin2client.exe",
@@ -62,6 +68,10 @@ public:
             "metin2client.exe",
             "e8 ? ? ? ? 8b e5 5d c2 ? ? cc cc cc cc cc cc cc cc cc cc cc cc cc cc cc 55 8b ec 83 "
             "ec ? 89 4d ? a1 ? ? ? ? 89 45 ? 6a");
+
+        SendClickItemPacket = Memory::FindAndResolveCall(
+            "metin2client.exe",
+            "e8 ? ? ? ? 8b 4d ? e8 ? ? ? ? 8b 4d ? e8 ? ? ? ? eb ? 8d 4d");
     }
 
     uint32_t OffsetBase = 0x2C4;
@@ -73,6 +83,11 @@ public:
 
     uint32_t ItemMapOffset = 0x4;
     uint32_t ItemNameOffset = 0xED;
+
+    uint32_t GroundItemMapOffset = 0x4;
+    uint32_t GroundItemPosXOffset = 0x8;
+    uint32_t GroundItemPosYOffset = GroundItemPosXOffset + 0x4;
+    uint32_t GroundItemOwnershipOffset = 0x300;
 
     uint32_t TargetVidOffset = 0x34A50;
 
@@ -87,9 +102,11 @@ public:
     uintptr_t PythonPlayer = 0;
     uintptr_t PythonNetworkStream = 0;
     uintptr_t ItemManager = 0;
+    uintptr_t PythonItem = 0;
 
     uintptr_t RenderCondition = 0;
 
     uintptr_t SendAttackPacket = 0;
     uintptr_t SendCharacterStatePacket = 0;
+    uintptr_t SendClickItemPacket = 0;
 };

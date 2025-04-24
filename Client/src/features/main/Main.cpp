@@ -7,7 +7,7 @@
 #include "hack/helper/Helper.h"
 #include "hack/instance/Instance.h"
 #include "hack/item/Item.h"
-
+#include "hack/groundItem/GroundItem.h"
 Packets::MainState Main::m_settings;
 
 // Add static variable for timing
@@ -93,6 +93,51 @@ void Main::RangeDamage() {
     }
 }
 
+void Main::PickupGroundItems() {
+    auto mainActor = Helper::GetMainActor();
+    if (!mainActor.IsValid()) {
+        return;
+    }
+
+    auto mainActorPos = mainActor.GetPixelPosition();
+    auto groundItemList = Helper::getGroundItemList();
+
+    if (groundItemList.empty()) {
+        return;
+    }
+
+    if (groundItemList.size() > 1) {
+        std::sort(groundItemList.begin(), groundItemList.end(), &Helper::CompareGroundItems);
+    }
+
+    for (const auto& groundItem : groundItemList) {
+        auto groundItemPos = groundItem.GetPixelPosition();
+        float groundItemDistance = mainActorPos.DistanceTo(groundItemPos);
+
+        if (groundItemDistance <= m_settings.AreaSize) {
+
+            if (groundItemDistance >= 6) {
+                auto m_points = Helper::DivideTwoPointsByDistance(4, mainActorPos, groundItemPos);
+                for (auto& point : m_points) {
+                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
+                    Sleep(3);
+                }
+            }
+
+            Helper::SendClickItemPacket(groundItem.GetVID());
+
+            if (groundItemDistance >= 6) {
+                auto p_points = Helper::DivideTwoPointsByDistance(4, groundItemPos, mainActorPos);
+                for (auto& point : p_points) {
+                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
+                    Sleep(3);
+                }
+            }
+            Sleep(30);
+        }
+    }
+}
+
 void Main::Loop() {
     if (!s_App) {
         LOG_ERROR(LOG_COMPONENT_FARMBOT, "FarmBot not initialized");
@@ -105,22 +150,16 @@ void Main::Loop() {
         Helper::ClearRam();
     }
 
+    auto mainCharacter = Helper::GetMainActor();
+    if (!mainCharacter.IsValid()) {
+        return;
+    }
+
+    if (m_settings.Pickup) {
+        PickupGroundItems();
+    }
+
     if (m_settings.DamageEnabled) {
-
-        TItemMap m_ItemMap = *(TItemMap*)(*reinterpret_cast<DWORD*>(
-            *reinterpret_cast<DWORD*>(Globals::Get()->ItemManager + Globals::Get()->ItemMapOffset)
-            + 4));
-
-        LOG_ERROR(LOG_COMPONENT_FARMBOT, "ItemMap: " << m_ItemMap.size());
-
-        for (const auto& item : m_ItemMap) {
-            auto _item = Item::FromAddress(item.second);
-
-            if (!_item.IsValid()) {
-                continue;
-            }
-            LOG_ERROR(LOG_COMPONENT_FARMBOT, "Item: " << item.first << " " << _item.GetName());
-        }
 
         auto currentTime = std::chrono::steady_clock::now();
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(

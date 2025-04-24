@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <cstdint>
 #include <cstring>
+#include "FracqMath.hpp"
+#include <string>
 
 enum class MobType : uint8_t {
     None = 0,
@@ -24,6 +26,21 @@ inline MobType operator&(MobType a, MobType b) {
 struct MobTypeUI {
     const char* name;
     MobType type;
+};
+
+struct GroundItemInstance {
+    uint32_t instance;
+    uint32_t virtualNumber;
+    Math::Vector3 endPosition;
+    Math::Vector3 rotationAxis;
+    Math::Vector4 quaternionEnd;
+    Math::Vector3 center;
+    uint32_t* thingInstance;
+    uint32_t startTime;
+    uint32_t endTime;
+    uint32_t dropSoundType;
+    BYTE dummy[0x2A8];
+    std::string ownership;
 };
 
 namespace Packets {

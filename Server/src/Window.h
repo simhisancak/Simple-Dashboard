@@ -3,10 +3,11 @@
 #include <string>
 #include <Windows.h>
 
-class Window
-{
+namespace FracqServer {
+
+class Window {
 public:
-    Window(const std::string &title, int width, int height);
+    Window(const std::string& title, int width, int height);
     ~Window();
 
     void PollEvents();
@@ -27,3 +28,5 @@ private:
     int m_Height = 0;
     bool m_ShouldClose = false;
 };
+
+} // namespace FracqServer

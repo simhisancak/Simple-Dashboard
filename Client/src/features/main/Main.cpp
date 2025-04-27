@@ -2,16 +2,25 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 
 #include "core/ClientApp.h"
 #include "hack/helper/Helper.h"
 #include "hack/instance/Instance.h"
 #include "hack/item/Item.h"
 #include "hack/groundItem/GroundItem.h"
-Packets::MainState Main::m_settings;
 
-// Add static variable for timing
+namespace FracqClient {
+Packets::MainState Main::m_settings;
+Packets::PickupState Main::m_pickupSettings;
+float Main::m_angle = 0.0f;
+Math::Vector3 Main::m_mainActorPosLast;
+
 static auto lastWaitHackTime = std::chrono::steady_clock::now();
+static auto lastPickupTime = std::chrono::steady_clock::now();
+const float Main::safeDistance = 2.0f;
+const float Main::radius = (m_settings.AreaSize * 0.6f) + safeDistance;
+const float Main::angleStep = (15.0f * 3.14159f) / 180.0f;
 
 void Main::WaitHack() {
     const float distance = 8.0f;
@@ -28,7 +37,7 @@ void Main::WaitHack() {
     }
 
     if (mobList.size() > 1) {
-        std::sort(mobList.begin(), mobList.end(), &Helper::CompareInstances);
+        mobList = Helper::FilterByAreaSize(mobList, mainActorPos, distance);
     }
 
     uint32_t count = 0;
@@ -37,7 +46,7 @@ void Main::WaitHack() {
         auto mobPos = mob.GetPixelPosition();
         float mobDistance = mainActorPos.DistanceTo(mobPos);
 
-        if (mobDistance <= distance && count < m_settings.DamageCount) {
+        if (count < m_settings.DamageLimit) {
             count++;
             Helper::SendAttackPacket(mob.GetVID());
             Sleep(20);
@@ -45,7 +54,85 @@ void Main::WaitHack() {
     }
 }
 
+Math::Vector3 Main::FindSafePosition(const Math::Vector3& mainActorPos,
+                                     float currentRadius,
+                                     float currentAngle,
+                                     float currentStep,
+                                     const std::vector<Instance>& mobList) {
+    auto pos
+        = Helper::CalculateCircularMovement(mainActorPos, currentRadius, currentAngle, currentStep);
+    if (!Helper::IsMobNearPosition(pos, mobList, 3.0f)) {
+        return pos;
+    }
+    for (int i = 0; i < 3; i++) {
+        pos = Helper::CalculateCircularMovement(mainActorPos,
+                                                currentRadius,
+                                                currentAngle,
+                                                currentStep * 1.5f);
+        if (!Helper::IsMobNearPosition(pos, mobList, 3.0f)) {
+            return pos;
+        }
+        currentAngle += currentStep * 0.5f;
+    }
+
+    float smallerRadius = currentRadius * 0.5f;
+    for (int i = 0; i < 3; i++) {
+        pos = Helper::CalculateCircularMovement(mainActorPos,
+                                                smallerRadius,
+                                                currentAngle,
+                                                currentStep * 0.5f);
+        if (!Helper::IsMobNearPosition(pos, mobList, 3.0f)) {
+            return pos;
+        }
+        currentAngle += currentStep * 0.5f;
+    }
+
+    return Helper::CalculateCircularMovement(mainActorPos,
+                                             currentRadius,
+                                             currentAngle,
+                                             currentStep);
+}
+
 void Main::RangeDamage() {
+    if (m_settings.AreaSize <= 2) {
+        return;
+    }
+    auto mainActor = Helper::GetMainActor();
+    if (!mainActor.IsValid()) {
+        return;
+    }
+
+    auto mainActorPos = mainActor.GetPixelPosition();
+    auto mobList = Helper::getMobList(m_settings.TargetTypes);
+
+    if (mobList.empty()) {
+        return;
+    }
+    mobList = Helper::FilterByAreaSize(mobList, mainActorPos, m_settings.AreaSize);
+
+    uint32_t count = 0;
+
+    for (const auto& mob : mobList) {
+        auto mobPos = mob.GetPixelPosition();
+        float mobDistance = mainActorPos.DistanceTo(mobPos);
+
+        if (count++ > m_settings.DamageLimit) {
+            break;
+        }
+
+        Helper::MoveTo(mainActorPos, mobPos);
+        Helper::SendAttackPacket(mob.GetVID());
+
+        Helper::MoveTo(mobPos, mainActorPos);
+
+        Sleep(20);
+    }
+}
+
+void Main::RangeDamageSafe() {
+    if (m_settings.AreaSize <= 2) {
+        return;
+    }
     auto mainActor = Helper::GetMainActor();
     if (!mainActor.IsValid()) {
         return;
@@ -58,39 +145,77 @@ void Main::RangeDamage() {
         return;
     }
 
-    if (mobList.size() > 1) {
-        std::sort(mobList.begin(), mobList.end(), &Helper::CompareInstances);
-    }
+    mobList = Helper::FilterByAreaSize(mobList, mainActorPos, m_settings.AreaSize);
 
     uint32_t count = 0;
+
+    if (m_mainActorPosLast.DistanceTo(mainActorPos) > radius + safeDistance) {
+        m_mainActorPosLast = mainActorPos;
+        m_angle = 0.0f;
+    }
 
     for (const auto& mob : mobList) {
         auto mobPos = mob.GetPixelPosition();
         float mobDistance = mainActorPos.DistanceTo(mobPos);
 
-        if (mobDistance <= m_settings.AreaSize && count < m_settings.DamageCount) {
-            count++;
-
-            if (mobDistance >= 6) {
-                auto m_points = Helper::DivideTwoPointsByDistance(4, mainActorPos, mobPos);
-                for (auto& point : m_points) {
-                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
-                    Sleep(3);
-                }
-            }
-
-            Helper::SendAttackPacket(mob.GetVID());
-
-            if (mobDistance >= 6) {
-                auto p_points = Helper::DivideTwoPointsByDistance(4, mobPos, mainActorPos);
-                for (auto& point : p_points) {
-                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
-                    Sleep(3);
-                }
-            }
-            Sleep(30);
+        if (count++ > m_settings.DamageLimit) {
+            break;
         }
+
+        Helper::MoveTo(mainActorPos, mobPos);
+        Helper::SendAttackPacket(mob.GetVID());
+
+        Math::Vector3 nextCircularPos
+            = FindSafePosition(mainActorPos, radius, m_angle, angleStep, mobList);
+        Helper::MoveTo(mobPos, nextCircularPos);
+        m_mainActorPosLast = nextCircularPos;
+        m_angle += angleStep;
+
+        Sleep(20);
     }
+}
+
+std::vector<GroundItem> Main::FilterGroundItems(const std::vector<GroundItem>& groundItemList,
+                                                const Math::Vector3& mainActorPos) {
+    std::vector<GroundItem> filtered;
+
+    for (auto& groundItem : groundItemList) {
+        auto groundItemPos = groundItem.GetPixelPosition();
+
+        if (mainActorPos.DistanceTo(groundItemPos) >= m_pickupSettings.AreaSize) {
+            continue;
+        }
+
+        if (!m_pickupSettings.Range && mainActorPos.DistanceTo(groundItemPos) >= 6.0f) {
+            continue;
+        }
+
+        if (!m_pickupSettings.IncludeAll) {
+            bool isItemInList = false;
+            uint32_t vnum = groundItem.GetVnum();
+
+            for (size_t i = 0; i < m_pickupSettings.ItemListSize; i++) {
+                if (m_pickupSettings.ItemList[i].Vnum == vnum) {
+                    isItemInList = true;
+                    break;
+                }
+            }
+
+            if (m_pickupSettings.Include) {
+                if (!isItemInList) {
+                    continue;
+                }
+            } else {
+                if (isItemInList) {
+                    continue;
+                }
+            }
+        }
+
+        filtered.push_back(groundItem);
+    }
+
+    return filtered;
 }
 
 void Main::PickupGroundItems() {
@@ -100,42 +225,28 @@ void Main::PickupGroundItems() {
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
+
     auto groundItemList = Helper::getGroundItemList();
 
     if (groundItemList.empty()) {
         return;
     }
 
-    if (groundItemList.size() > 1) {
-        std::sort(groundItemList.begin(), groundItemList.end(), &Helper::CompareGroundItems);
+    if (m_mainActorPosLast.DistanceTo(mainActorPos) < radius + safeDistance) {
+        mainActorPos = m_mainActorPosLast;
     }
 
-    for (const auto& groundItem : groundItemList) {
-        auto groundItemPos = groundItem.GetPixelPosition();
-        float groundItemDistance = mainActorPos.DistanceTo(groundItemPos);
+    auto filteredGroundItemList = FilterGroundItems(groundItemList, mainActorPos);
 
-        if (groundItemDistance <= m_settings.AreaSize) {
-
-            if (groundItemDistance >= 6) {
-                auto m_points = Helper::DivideTwoPointsByDistance(4, mainActorPos, groundItemPos);
-                for (auto& point : m_points) {
-                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
-                    Sleep(3);
-                }
-            }
-
-            Helper::SendClickItemPacket(groundItem.GetVID());
-
-            if (groundItemDistance >= 6) {
-                auto p_points = Helper::DivideTwoPointsByDistance(4, groundItemPos, mainActorPos);
-                for (auto& point : p_points) {
-                    Helper::SendCharacterStatePacket(&point, 0, 0, 0);
-                    Sleep(3);
-                }
-            }
-            Sleep(30);
-        }
+    if (filteredGroundItemList.empty()) {
+        return;
     }
+
+    Helper::MoveTo(mainActorPos, filteredGroundItemList[0].GetPixelPosition());
+
+    Helper::SendClickItemPacket(filteredGroundItemList[0].GetVID());
+
+    Helper::MoveTo(filteredGroundItemList[0].GetPixelPosition(), mainActorPos);
 }
 
 void Main::Loop() {
@@ -144,6 +255,9 @@ void Main::Loop() {
         return;
     }
     m_settings = s_App->GetSettings().Main;
+
+    m_pickupSettings = s_App->GetSettings().Pickup;
+
     Helper::RenderCondition(m_settings.RenderSkip);
 
     if (m_settings.ClearRam) {
@@ -155,8 +269,8 @@ void Main::Loop() {
         return;
     }
 
-    if (m_settings.Pickup) {
-        PickupGroundItems();
+    if (mainCharacter.IsDead()) {
+        return;
     }
 
     if (m_settings.DamageEnabled) {
@@ -175,9 +289,25 @@ void Main::Loop() {
             case Packets::DamageType::RangeDamage:
                 RangeDamage();
                 break;
+            case Packets::DamageType::RangeDamageSafe:
+                RangeDamageSafe();
+                break;
             default:
                 break;
             }
         }
     }
+
+    if (m_pickupSettings.Enabled) {
+        auto currentTime = std::chrono::steady_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime
+                                                                                 - lastPickupTime);
+
+        if (elapsedTime.count() >= m_pickupSettings.Delay) {
+            lastPickupTime = currentTime;
+            PickupGroundItems();
+        }
+    }
 }
+
+} // namespace FracqClient

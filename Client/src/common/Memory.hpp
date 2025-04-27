@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace Common {
+
 class Memory {
 private:
     static bool PatternCompare(const uint8_t* data, const uint8_t* pattern, const char* mask) {
@@ -366,3 +368,5 @@ public:
         return ResolveMultiLevel<T>(address, offsets);
     }
 };
+
+} // namespace Common

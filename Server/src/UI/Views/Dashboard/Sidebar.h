@@ -4,18 +4,20 @@
 #include "Server/ServerManager.h"
 #include <string>
 
+namespace FracqServer {
 namespace UI {
-namespace Views {
+    namespace Views {
 
-    class DashboardSidebar {
-    public:
-        DashboardSidebar(Application* app);
-        ~DashboardSidebar() = default;
+        class DashboardSidebar {
+        public:
+            DashboardSidebar(Application* app);
+            ~DashboardSidebar() = default;
 
-        void Render(int& selectedPid);
+            void Render(int& selectedPid);
 
-    private:
-        Application* m_App;
-    };
-}
-}
+        private:
+            Application* m_App;
+        };
+    } // namespace Views
+} // namespace UI
+} // namespace FracqServer

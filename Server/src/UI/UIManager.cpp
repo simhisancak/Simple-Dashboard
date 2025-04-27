@@ -6,47 +6,41 @@
 #include "Views/Dashboard/View.h"
 #include "View.h"
 
-UIManager::UIManager(Application* app, Renderer* renderer)
-    : m_App(app), m_Renderer(renderer)
-{
-    RegisterView<UI::Views::LoginView>();
-    RegisterView<UI::Views::DashboardView>();
-}
+namespace FracqServer {
+namespace UI {
 
-UIManager::~UIManager() = default;
+    UIManager::UIManager(Application* app, Renderer* renderer)
+        : m_App(app)
+        , m_Renderer(renderer) {
+        RegisterView<UI::Views::LoginView>();
+        RegisterView<UI::Views::DashboardView>();
+    }
 
-void UIManager::Update()
-{
-    if (m_App->GetAuthManager()->IsLoggedIn())
-    {
-        if (auto* loginView = GetView<UI::Views::LoginView>())
-        {
-            loginView->Update();
-        }
-    }
-    else
-    {
-        if (auto* dashboardView = GetView<UI::Views::DashboardView>())
-        {
-            dashboardView->Update();
-        }
-    }
-}
+    UIManager::~UIManager() = default;
 
-void UIManager::Render()
-{
-    if (m_App->GetAuthManager()->IsLoggedIn())
-    {
-        if (auto* loginView = GetView<UI::Views::LoginView>())
-        {
-            loginView->Render();
+    void UIManager::Update() {
+        if (!m_App->GetAuthManager()->IsLoggedIn()) { // Login olmamışsa
+            if (auto* loginView = GetView<UI::Views::LoginView>()) {
+                loginView->Update();
+            }
+        } else { // Login olmuşsa
+            if (auto* dashboardView = GetView<UI::Views::DashboardView>()) {
+                dashboardView->Update();
+            }
         }
     }
-    else
-    {
-        if (auto* dashboardView = GetView<UI::Views::DashboardView>())
-        {
-            dashboardView->Render();
+
+    void UIManager::Render() {
+        if (!m_App->GetAuthManager()->IsLoggedIn()) { // Login olmamışsa
+            if (auto* loginView = GetView<UI::Views::LoginView>()) {
+                loginView->Render();
+            }
+        } else { // Login olmuşsa
+            if (auto* dashboardView = GetView<UI::Views::DashboardView>()) {
+                dashboardView->Render();
+            }
         }
     }
-} 
+
+} // namespace UI
+} // namespace FracqServer

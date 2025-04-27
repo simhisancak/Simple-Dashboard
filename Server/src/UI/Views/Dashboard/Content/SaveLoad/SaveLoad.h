@@ -2,21 +2,23 @@
 
 #include "../Content.h"
 
+namespace FracqServer {
 namespace UI {
-namespace Views {
+    namespace Views {
 
-class SaveLoad : public DashboardContent {
-public:
-    SaveLoad(Application* app);
-    ~SaveLoad() = default;
+        class SaveLoad : public DashboardContent {
+        public:
+            SaveLoad(Application* app);
+            ~SaveLoad() = default;
 
-    void Render(int selectedPid = -1) override;
-    const char* GetTitle() const override { return "Save/Load"; }
-    const char* GetContentId() const override { return "saveload"; }
+            void Render(int selectedPid = -1) override;
+            const char* GetTitle() const override { return "Save/Load"; }
+            const char* GetContentId() const override { return "saveload"; }
 
-private:
-    void RenderSaveSection();
-    void RenderLoadSection();
-};
-}
-} 
+        private:
+            void RenderSaveSection();
+            void RenderLoadSection();
+        };
+    } // namespace Views
+} // namespace UI
+} // namespace FracqServer

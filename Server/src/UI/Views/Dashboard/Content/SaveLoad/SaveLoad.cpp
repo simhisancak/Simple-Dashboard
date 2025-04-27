@@ -1,18 +1,14 @@
 #include "SaveLoad.h"
 #include <imgui.h>
 
-namespace UI
-{
-    namespace Views
-    {
+namespace FracqServer {
+namespace UI {
+    namespace Views {
 
-        SaveLoad::SaveLoad(Application *app)
-            : DashboardContent(app)
-        {
-        }
+        SaveLoad::SaveLoad(Application* app)
+            : DashboardContent(app) { }
 
-        void SaveLoad::Render(int selectedPid)
-        {
+        void SaveLoad::Render(int selectedPid) {
             ImGui::BeginChild("Save", ImVec2(ImGui::GetWindowWidth() * 0.5f - 5.0f, 0), true);
             RenderSaveSection();
             ImGui::EndChild();
@@ -24,8 +20,7 @@ namespace UI
             ImGui::EndChild();
         }
 
-        void SaveLoad::RenderSaveSection()
-        {
+        void SaveLoad::RenderSaveSection() {
             ImGui::Text("Save Configuration");
             ImGui::Separator();
 
@@ -51,26 +46,24 @@ namespace UI
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (ImGui::Button("Save Configuration", ImVec2(150, 30)))
-            {
+            if (ImGui::Button("Save Configuration", ImVec2(150, 30))) {
                 // TODO: Kaydetme işlemleri
             }
         }
 
-        void SaveLoad::RenderLoadSection()
-        {
+        void SaveLoad::RenderLoadSection() {
             ImGui::Text("Load Configuration");
             ImGui::Separator();
 
             ImGui::BeginChild("ConfigList", ImVec2(0, ImGui::GetWindowHeight() * 0.7f), true);
 
             static int selectedConfig = -1;
-            const char *configs[] = {"Config 1", "Config 2", "Config 3"}; // TODO: Gerçek konfigürasyonları listele
+            const char* configs[] = { "Config 1",
+                                      "Config 2",
+                                      "Config 3" }; // TODO: Gerçek konfigürasyonları listele
 
-            for (int i = 0; i < 3; i++)
-            {
-                if (ImGui::Selectable(configs[i], selectedConfig == i))
-                {
+            for (int i = 0; i < 3; i++) {
+                if (ImGui::Selectable(configs[i], selectedConfig == i)) {
                     selectedConfig = i;
                 }
             }
@@ -82,19 +75,18 @@ namespace UI
             ImGui::Spacing();
 
             ImGui::BeginGroup();
-            if (ImGui::Button("Load Selected", ImVec2(150, 30)))
-            {
+            if (ImGui::Button("Load Selected", ImVec2(150, 30))) {
                 // TODO: Seçili konfigürasyonu yükle
             }
 
             ImGui::SameLine();
 
-            if (ImGui::Button("Delete Selected", ImVec2(150, 30)))
-            {
+            if (ImGui::Button("Delete Selected", ImVec2(150, 30))) {
                 // TODO: Seçili konfigürasyonu sil
             }
             ImGui::EndGroup();
         }
 
-    }
-}
+    } // namespace Views
+} // namespace UI
+} // namespace FracqServer

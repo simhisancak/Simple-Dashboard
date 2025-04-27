@@ -24,44 +24,41 @@
 #include <iomanip>
 #include <sstream>
 
-namespace Server
-{
+namespace FracqServer {
+namespace Server {
 
-    ServerManager::ServerManager(Application *app)
-        : m_App(app), m_Running(false), m_ListenSocket(INVALID_SOCKET), m_Port(0)
-    {
+    ServerManager::ServerManager(Application* app)
+        : m_App(app)
+        , m_Running(false)
+        , m_ListenSocket(INVALID_SOCKET)
+        , m_Port(0) {
         WSADATA wsaData;
         int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
-        if (result != 0)
-        {
+        if (result != 0) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "WSAStartup failed: " << std::to_string(result));
         }
     }
 
-    ServerManager::~ServerManager()
-    {
+    ServerManager::~ServerManager() {
         Stop();
         WSACleanup();
     }
 
-    bool ServerManager::Start(int port)
-    {
-        if (m_Running)
-        {
+    bool ServerManager::Start(int port) {
+        if (m_Running) {
             LOG_WARN(LOG_COMPONENT_SERVER, "Server is already running");
             return false;
         }
 
         m_ListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (m_ListenSocket == INVALID_SOCKET)
-        {
-            LOG_ERROR(LOG_COMPONENT_SERVER, "Socket creation failed: " << std::to_string(WSAGetLastError()));
+        if (m_ListenSocket == INVALID_SOCKET) {
+            LOG_ERROR(LOG_COMPONENT_SERVER,
+                      "Socket creation failed: " << std::to_string(WSAGetLastError()));
             return false;
         }
 
         u_long mode = 1;
-        if (ioctlsocket(m_ListenSocket, FIONBIO, &mode) == SOCKET_ERROR)
-        {
+        if (ioctlsocket(m_ListenSocket, FIONBIO, &mode) == SOCKET_ERROR) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "Failed to set socket to non-blocking mode");
             closesocket(m_ListenSocket);
             m_ListenSocket = INVALID_SOCKET;
@@ -69,13 +66,34 @@ namespace Server
         }
 
         int opt = 1;
-        if (setsockopt(m_ListenSocket, SOL_SOCKET, SO_REUSEADDR,
-                       reinterpret_cast<char *>(&opt), sizeof(opt)) == SOCKET_ERROR)
-        {
+        if (setsockopt(m_ListenSocket,
+                       SOL_SOCKET,
+                       SO_REUSEADDR,
+                       reinterpret_cast<char*>(&opt),
+                       sizeof(opt))
+            == SOCKET_ERROR) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "setsockopt SO_REUSEADDR failed");
             closesocket(m_ListenSocket);
             m_ListenSocket = INVALID_SOCKET;
             return false;
+        }
+
+        // Increase listen socket buffer sizes to 1MB
+        int BufferSize = MAX_BUFFER_SIZE;
+        if (setsockopt(m_ListenSocket,
+                       SOL_SOCKET,
+                       SO_SNDBUF,
+                       (char*)&BufferSize,
+                       sizeof(BufferSize))
+                == SOCKET_ERROR
+            || setsockopt(m_ListenSocket,
+                          SOL_SOCKET,
+                          SO_RCVBUF,
+                          (char*)&BufferSize,
+                          sizeof(BufferSize))
+                   == SOCKET_ERROR) {
+            LOG_WARN(LOG_COMPONENT_SERVER,
+                     "Failed to set listen socket buffer sizes: " << WSAGetLastError());
         }
 
         sockaddr_in serverAddr;
@@ -84,16 +102,15 @@ namespace Server
         serverAddr.sin_addr.s_addr = INADDR_ANY;
         serverAddr.sin_port = htons(static_cast<u_short>(port));
 
-        if (bind(m_ListenSocket, reinterpret_cast<SOCKADDR *>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR)
-        {
+        if (bind(m_ListenSocket, reinterpret_cast<SOCKADDR*>(&serverAddr), sizeof(serverAddr))
+            == SOCKET_ERROR) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "Bind failed: " << std::to_string(WSAGetLastError()));
             closesocket(m_ListenSocket);
             m_ListenSocket = INVALID_SOCKET;
             return false;
         }
 
-        if (listen(m_ListenSocket, SOMAXCONN) == SOCKET_ERROR)
-        {
+        if (listen(m_ListenSocket, SOMAXCONN) == SOCKET_ERROR) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "Listen failed: " << std::to_string(WSAGetLastError()));
             closesocket(m_ListenSocket);
             m_ListenSocket = INVALID_SOCKET;
@@ -106,62 +123,54 @@ namespace Server
         m_ServerThread = std::thread(&ServerManager::ServerThread, this);
         m_AcceptThread = std::thread(&ServerManager::AcceptThread, this);
 
-        LOG_INFO(LOG_COMPONENT_SERVER, "Server started successfully on port " << std::to_string(port));
+        LOG_INFO(LOG_COMPONENT_SERVER,
+                 "Server started successfully on port " << std::to_string(port));
         return true;
     }
 
-    void ServerManager::ServerThread()
-    {
+    void ServerManager::ServerThread() {
         DWORD lastMemoryRequestTime = GetTickCount();
 
-        while (m_Running)
-        {
-            try
-            {
+        while (m_Running) {
+            try {
                 std::vector<std::shared_ptr<ClientInfo>> clientsToRemove;
 
                 {
                     std::shared_lock<std::shared_mutex> lock(m_ClientsMutex);
-                    for (const auto &client : m_Clients)
-                    {
-                        if (client->IsTimedOut())
-                        {
+                    for (const auto& client : m_Clients) {
+                        if (client->IsTimedOut()) {
                             clientsToRemove.push_back(client);
                         }
                     }
                 }
 
-                if (!clientsToRemove.empty())
-                {
+                if (!clientsToRemove.empty()) {
                     std::unique_lock<std::shared_mutex> lock(m_ClientsMutex);
-                    for (const auto &client : clientsToRemove)
-                    {
-                        LOG_INFO(LOG_COMPONENT_SERVER, "Removing inactive client: " << client->processName
-                                                                                    << " (PID: " << client->pid << ")");
+                    for (const auto& client : clientsToRemove) {
+                        LOG_INFO(LOG_COMPONENT_SERVER,
+                                 "Removing inactive client: " << client->processName
+                                                              << " (PID: " << client->pid << ")");
 
-                        if (client->socket != INVALID_SOCKET)
-                        {
+                        if (client->socket != INVALID_SOCKET) {
                             shutdown(client->socket, SD_BOTH);
                             closesocket(client->socket);
                             client->socket = INVALID_SOCKET;
                         }
 
-                        m_Clients.erase(
-                            std::remove_if(m_Clients.begin(), m_Clients.end(),
-                                           [&](const auto &c)
-                                           { return c->pid == client->pid; }),
-                            m_Clients.end());
+                        m_Clients.erase(std::remove_if(m_Clients.begin(),
+                                                       m_Clients.end(),
+                                                       [&](const auto& c) {
+                                                           return c->pid == client->pid;
+                                                       }),
+                                        m_Clients.end());
                     }
                 }
 
                 DWORD currentTime = GetTickCount();
-                if (currentTime - lastMemoryRequestTime >= MEMORY_REQUEST_INTERVAL_MS)
-                {
+                if (currentTime - lastMemoryRequestTime >= MEMORY_REQUEST_INTERVAL_MS) {
                     std::shared_lock<std::shared_mutex> lock(m_ClientsMutex);
-                    for (const auto &client : m_Clients)
-                    {
-                        if (client->isActive && client->socket != INVALID_SOCKET)
-                        {
+                    for (const auto& client : m_Clients) {
+                        if (client->isActive && client->socket != INVALID_SOCKET) {
                             RequestMemoryInfo(client->pid);
                         }
                     }
@@ -169,26 +178,21 @@ namespace Server
                 }
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
-            catch (const std::exception &e)
-            {
+            } catch (const std::exception& e) {
                 LOG_ERROR(LOG_COMPONENT_SERVER, "Critical error in Server thread: " << e.what());
             }
         }
 
         std::unique_lock<std::shared_mutex> lock(m_ClientsMutex);
-        for (const auto &client : m_Clients)
-        {
-            if (client->socket != INVALID_SOCKET)
-            {
+        for (const auto& client : m_Clients) {
+            if (client->socket != INVALID_SOCKET) {
                 shutdown(client->socket, SD_BOTH);
                 closesocket(client->socket);
             }
         }
         m_Clients.clear();
 
-        if (m_ListenSocket != INVALID_SOCKET)
-        {
+        if (m_ListenSocket != INVALID_SOCKET) {
             closesocket(m_ListenSocket);
             m_ListenSocket = INVALID_SOCKET;
         }
@@ -196,35 +200,29 @@ namespace Server
         LOG_INFO(LOG_COMPONENT_SERVER, "Server thread stopped");
     }
 
-    void ServerManager::Stop()
-    {
+    void ServerManager::Stop() {
         if (!m_Running)
             return;
 
         m_Running = false;
 
-        if (m_ServerThread.joinable())
-        {
+        if (m_ServerThread.joinable()) {
             m_ServerThread.join();
         }
 
-        if (m_AcceptThread.joinable())
-        {
+        if (m_AcceptThread.joinable()) {
             m_AcceptThread.join();
         }
 
-        if (m_ListenSocket != INVALID_SOCKET)
-        {
+        if (m_ListenSocket != INVALID_SOCKET) {
             closesocket(m_ListenSocket);
             m_ListenSocket = INVALID_SOCKET;
         }
 
         {
             std::unique_lock<std::shared_mutex> lock(m_ClientsMutex);
-            for (auto &client : m_Clients)
-            {
-                if (client->socket != INVALID_SOCKET)
-                {
+            for (auto& client : m_Clients) {
+                if (client->socket != INVALID_SOCKET) {
                     closesocket(client->socket);
                     client->socket = INVALID_SOCKET;
                 }
@@ -232,10 +230,8 @@ namespace Server
             m_Clients.clear();
         }
 
-        for (auto &thread : m_ClientThreads)
-        {
-            if (thread.joinable())
-            {
+        for (auto& thread : m_ClientThreads) {
+            if (thread.joinable()) {
                 thread.join();
             }
         }
@@ -244,40 +240,59 @@ namespace Server
         LOG_INFO(LOG_COMPONENT_SERVER, "Server stopped");
     }
 
-    void ServerManager::Update()
-    {
-    }
+    void ServerManager::Update() { }
 
-    void ServerManager::AcceptThread()
-    {
-        while (m_Running)
-        {
+    void ServerManager::AcceptThread() {
+        while (m_Running) {
             SOCKET clientSocket = accept(m_ListenSocket, nullptr, nullptr);
 
-            if (clientSocket == INVALID_SOCKET)
-            {
-                if (WSAGetLastError() != WSAEWOULDBLOCK)
-                {
-                    LOG_ERROR(LOG_COMPONENT_SERVER, "Accept failed: " << std::to_string(WSAGetLastError()));
+            if (clientSocket == INVALID_SOCKET) {
+                if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                    LOG_ERROR(LOG_COMPONENT_SERVER,
+                              "Accept failed: " << std::to_string(WSAGetLastError()));
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 continue;
             }
 
             u_long mode = 1;
-            if (ioctlsocket(clientSocket, FIONBIO, &mode) == SOCKET_ERROR)
-            {
+            if (ioctlsocket(clientSocket, FIONBIO, &mode) == SOCKET_ERROR) {
                 LOG_ERROR(LOG_COMPONENT_SERVER, "Failed to set client socket to non-blocking mode");
                 closesocket(clientSocket);
                 continue;
             }
 
+            // Increase client socket buffer sizes to 1MB
+            int clientBufferSize = 1024 * 1024; // 1MB buffer
+            if (setsockopt(clientSocket,
+                           SOL_SOCKET,
+                           SO_SNDBUF,
+                           (char*)&clientBufferSize,
+                           sizeof(clientBufferSize))
+                    == SOCKET_ERROR
+                || setsockopt(clientSocket,
+                              SOL_SOCKET,
+                              SO_RCVBUF,
+                              (char*)&clientBufferSize,
+                              sizeof(clientBufferSize))
+                       == SOCKET_ERROR) {
+                LOG_WARN(LOG_COMPONENT_SERVER,
+                         "Failed to set client socket buffer sizes: " << WSAGetLastError());
+            }
+
             DWORD timeout = SOCKET_TIMEOUT_MS;
-            if (setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO,
-                           reinterpret_cast<char *>(&timeout), sizeof(timeout)) == SOCKET_ERROR ||
-                setsockopt(clientSocket, SOL_SOCKET, SO_SNDTIMEO,
-                           reinterpret_cast<char *>(&timeout), sizeof(timeout)) == SOCKET_ERROR)
-            {
+            if (setsockopt(clientSocket,
+                           SOL_SOCKET,
+                           SO_RCVTIMEO,
+                           reinterpret_cast<char*>(&timeout),
+                           sizeof(timeout))
+                    == SOCKET_ERROR
+                || setsockopt(clientSocket,
+                              SOL_SOCKET,
+                              SO_SNDTIMEO,
+                              reinterpret_cast<char*>(&timeout),
+                              sizeof(timeout))
+                       == SOCKET_ERROR) {
                 LOG_ERROR(LOG_COMPONENT_SERVER, "Failed to set socket timeouts");
                 closesocket(clientSocket);
                 continue;
@@ -290,8 +305,7 @@ namespace Server
 
             {
                 std::unique_lock<std::shared_mutex> lock(m_ClientsMutex);
-                if (m_Clients.size() >= MAX_CLIENTS)
-                {
+                if (m_Clients.size() >= MAX_CLIENTS) {
                     LOG_ERROR(LOG_COMPONENT_SERVER, "Maximum number of clients reached");
                     closesocket(clientSocket);
                     continue;
@@ -303,56 +317,48 @@ namespace Server
         }
     }
 
-    void ServerManager::ClientThread(std::shared_ptr<ClientInfo> client)
-    {
-        try
-        {
-            while (m_Running && client->isActive)
-            {
+    void ServerManager::ClientThread(std::shared_ptr<ClientInfo> client) {
+        try {
+            while (m_Running && client->isActive) {
                 fd_set readSet;
                 FD_ZERO(&readSet);
                 FD_SET(client->socket, &readSet);
 
-                timeval timeout{0, 1000};
+                timeval timeout { 0, 1000 };
                 int result = select(0, &readSet, nullptr, nullptr, &timeout);
 
-                if (result == SOCKET_ERROR)
-                {
-                    LOG_ERROR(LOG_COMPONENT_SERVER, "Select failed for client: " << std::to_string(WSAGetLastError()));
+                if (result == SOCKET_ERROR) {
+                    LOG_ERROR(LOG_COMPONENT_SERVER,
+                              "Select failed for client: " << std::to_string(WSAGetLastError()));
                     break;
                 }
 
-                if (result > 0)
-                {
+                if (result > 0) {
                     int bytesReceived = recv(client->socket,
                                              client->recvBuffer.get() + client->recvBufferPos,
-                                             static_cast<int>(MAX_BUFFER_SIZE - client->recvBufferPos), 0);
+                                             static_cast<int>(MAX_BUFFER_SIZE
+                                                              - client->recvBufferPos),
+                                             0);
 
-                    if (bytesReceived == SOCKET_ERROR)
-                    {
-                        if (WSAGetLastError() != WSAEWOULDBLOCK)
-                        {
-                            LOG_ERROR(LOG_COMPONENT_SERVER, "Receive failed: " << std::to_string(WSAGetLastError()));
+                    if (bytesReceived == SOCKET_ERROR) {
+                        if (WSAGetLastError() != WSAEWOULDBLOCK) {
+                            LOG_ERROR(LOG_COMPONENT_SERVER,
+                                      "Receive failed: " << std::to_string(WSAGetLastError()));
                             break;
                         }
-                    }
-                    else if (bytesReceived == 0)
-                    {
+                    } else if (bytesReceived == 0) {
                         break;
-                    }
-                    else
-                    {
+                    } else {
                         client->recvBufferPos += bytesReceived;
 
                         size_t processedBytes = 0;
-                        while (client->recvBufferPos - processedBytes >= sizeof(Packets::PacketHeader))
-                        {
-                            auto header = reinterpret_cast<Packets::PacketHeader *>(
+                        while (client->recvBufferPos - processedBytes
+                               >= sizeof(Packets::PacketHeader)) {
+                            auto header = reinterpret_cast<Packets::PacketHeader*>(
                                 client->recvBuffer.get() + processedBytes);
 
                             size_t packetSize = 0;
-                            switch (header->Type)
-                            {
+                            switch (header->Type) {
                             case Packets::PacketType::Register:
                                 packetSize = sizeof(Packets::RegisterPacket);
                                 break;
@@ -362,37 +368,38 @@ namespace Server
                             case Packets::PacketType::MemoryResponse:
                                 packetSize = sizeof(Packets::MemoryResponsePacket);
                                 break;
+                            case Packets::PacketType::ItemDumpResponse:
+                                packetSize = sizeof(Packets::ItemDumpResponsePacket);
+                                break;
                             case Packets::PacketType::SettingsRequest:
                                 packetSize = sizeof(Packets::SettingsRequestPacket);
                                 break;
                             default:
-                                LOG_ERROR(LOG_COMPONENT_SERVER, "Unknown packet type received: " << std::to_string(static_cast<int>(header->Type)));
+                                LOG_ERROR(LOG_COMPONENT_SERVER,
+                                          "Unknown packet type received: "
+                                              << std::to_string(static_cast<int>(header->Type)));
                                 client->isActive = false;
                                 return;
                             }
 
-                            if (client->recvBufferPos - processedBytes < packetSize)
-                            {
+                            if (client->recvBufferPos - processedBytes < packetSize) {
                                 break;
                             }
 
                             if (ProcessPacket(client,
                                               client->recvBuffer.get() + processedBytes,
-                                              packetSize))
-                            {
+                                              packetSize)) {
                                 processedBytes += packetSize;
-                            }
-                            else
-                            {
-                                LOG_ERROR(LOG_COMPONENT_SERVER, "Failed to process packet from client: " << client->processName);
+                            } else {
+                                LOG_ERROR(LOG_COMPONENT_SERVER,
+                                          "Failed to process packet from client: "
+                                              << client->processName);
                                 break;
                             }
                         }
 
-                        if (processedBytes > 0)
-                        {
-                            if (processedBytes < client->recvBufferPos)
-                            {
+                        if (processedBytes > 0) {
+                            if (processedBytes < client->recvBufferPos) {
                                 memmove(client->recvBuffer.get(),
                                         client->recvBuffer.get() + processedBytes,
                                         client->recvBufferPos - processedBytes);
@@ -404,34 +411,26 @@ namespace Server
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
-        }
-        catch (const std::exception &e)
-        {
+        } catch (const std::exception& e) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "Error in client thread: " << e.what());
         }
 
-        if (client->socket != INVALID_SOCKET)
-        {
+        if (client->socket != INVALID_SOCKET) {
             closesocket(client->socket);
             client->socket = INVALID_SOCKET;
         }
         client->isActive = false;
     }
 
-    bool ServerManager::SendPacket(SOCKET socket, const void *data, size_t size)
-    {
-        const char *buffer = static_cast<const char *>(data);
+    bool ServerManager::SendPacket(SOCKET socket, const void* data, size_t size) {
+        const char* buffer = static_cast<const char*>(data);
         size_t totalSent = 0;
 
-        while (totalSent < size)
-        {
-            int result = send(socket, buffer + totalSent,
-                              static_cast<int>(size - totalSent), 0);
+        while (totalSent < size) {
+            int result = send(socket, buffer + totalSent, static_cast<int>(size - totalSent), 0);
 
-            if (result == SOCKET_ERROR)
-            {
-                if (WSAGetLastError() != WSAEWOULDBLOCK)
-                {
+            if (result == SOCKET_ERROR) {
+                if (WSAGetLastError() != WSAEWOULDBLOCK) {
                     return false;
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -444,38 +443,37 @@ namespace Server
         return true;
     }
 
-    bool ServerManager::ProcessPacket(std::shared_ptr<ClientInfo> client, const char *data, size_t size)
-    {
+    bool ServerManager::ProcessPacket(std::shared_ptr<ClientInfo> client,
+                                      const char* data,
+                                      size_t size) {
         LOG_INFO(LOG_COMPONENT_SERVER, "Processing packet - Size: " << size);
-        if (size < sizeof(Packets::PacketHeader))
-        {
+        if (size < sizeof(Packets::PacketHeader)) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "Received packet too small");
             return false;
         }
 
-        auto header = reinterpret_cast<const Packets::PacketHeader *>(data);
+        auto header = reinterpret_cast<const Packets::PacketHeader*>(data);
 
-        try
-        {
-            switch (header->Type)
-            {
+        try {
+            switch (header->Type) {
             case Packets::PacketType::Register:
-                if (size >= sizeof(Packets::RegisterPacket))
-                {
-                    auto packet = reinterpret_cast<const Packets::RegisterPacket *>(data);
+                if (size >= sizeof(Packets::RegisterPacket)) {
+                    auto packet = reinterpret_cast<const Packets::RegisterPacket*>(data);
 
                     {
                         std::unique_lock<std::shared_mutex> lock(m_ClientsMutex);
-                        auto it = std::find_if(m_Clients.begin(), m_Clients.end(),
-                                               [pid = packet->PID](const auto &c)
-                                               { return c->pid == pid && c->isActive; });
+                        auto it = std::find_if(m_Clients.begin(),
+                                               m_Clients.end(),
+                                               [pid = packet->PID](const auto& c) {
+                                                   return c->pid == pid && c->isActive;
+                                               });
 
-                        if (it != m_Clients.end())
-                        {
-                            LOG_INFO(LOG_COMPONENT_SERVER, "Removing existing client with PID: " << std::to_string(packet->PID));
+                        if (it != m_Clients.end()) {
+                            LOG_INFO(LOG_COMPONENT_SERVER,
+                                     "Removing existing client with PID: "
+                                         << std::to_string(packet->PID));
                             (*it)->isActive = false;
-                            if ((*it)->socket != INVALID_SOCKET)
-                            {
+                            if ((*it)->socket != INVALID_SOCKET) {
                                 closesocket((*it)->socket);
                                 (*it)->socket = INVALID_SOCKET;
                             }
@@ -488,14 +486,15 @@ namespace Server
                     client->isActive = true;
                     client->UpdateActivity();
 
-                    LOG_INFO(LOG_COMPONENT_SERVER, "Registered new client: " << client->processName << " (PID: " << std::to_string(client->pid) << ")");
+                    LOG_INFO(LOG_COMPONENT_SERVER,
+                             "Registered new client: " << client->processName << " (PID: "
+                                                       << std::to_string(client->pid) << ")");
                     return true;
                 }
                 break;
 
             case Packets::PacketType::HealthCheck:
-                if (size >= sizeof(Packets::HealthCheckPacket))
-                {
+                if (size >= sizeof(Packets::HealthCheckPacket)) {
                     client->UpdateActivity();
                     return true;
                 }
@@ -503,19 +502,16 @@ namespace Server
 
             case Packets::PacketType::MemoryResponse:
                 LOG_INFO(LOG_COMPONENT_SERVER, "Memory Response Packet received - Size: " << size);
-                if (size >= sizeof(Packets::MemoryResponsePacket))
-                {
-                    auto packet = reinterpret_cast<const Packets::MemoryResponsePacket *>(data);
+                if (size >= sizeof(Packets::MemoryResponsePacket)) {
+                    auto packet = reinterpret_cast<const Packets::MemoryResponsePacket*>(data);
 
-                    try
-                    {
+                    try {
                         memcpy(&client->memoryInfo, &packet->State, sizeof(Packets::MemoryState));
                         client->UpdateActivity();
-                        LOG_DEBUG(LOG_COMPONENT_SERVER, "Successfully processed memory response - Mob count: "
-                                                            << client->memoryInfo.MobListSize);
-                    }
-                    catch (const std::exception &e)
-                    {
+                        LOG_DEBUG(LOG_COMPONENT_SERVER,
+                                  "Successfully processed memory response - Mob count: "
+                                      << client->memoryInfo.MobListSize);
+                    } catch (const std::exception& e) {
                         LOG_ERROR(LOG_COMPONENT_SERVER, "Error copying memory state: " << e.what());
                         return false;
                     }
@@ -524,15 +520,35 @@ namespace Server
                 }
                 break;
 
+            case Packets::PacketType::ItemDumpResponse:
+                LOG_INFO(LOG_COMPONENT_SERVER,
+                         "Item Dump Response Packet received - Size: " << size);
+                if (size >= sizeof(Packets::ItemDumpResponsePacket)) {
+                    auto packet = reinterpret_cast<const Packets::ItemDumpResponsePacket*>(data);
+
+                    try {
+                        memcpy(&client->itemDumpState,
+                               &packet->State,
+                               sizeof(Packets::ItemDumpState));
+                        client->UpdateActivity();
+
+                    } catch (const std::exception& e) {
+                        LOG_ERROR(LOG_COMPONENT_SERVER,
+                                  "Error copying item dump state: " << e.what());
+                        return false;
+                    }
+
+                    return true;
+                }
+                break;
+
             case Packets::PacketType::SettingsRequest:
-                if (size >= sizeof(Packets::SettingsRequestPacket))
-                {
+                if (size >= sizeof(Packets::SettingsRequestPacket)) {
                     Packets::SettingsResponsePacket response;
                     response.State = client->settings;
-                    response.Header.Type = Packets::PacketType::SettingsResponse;
-                    response.Header.Size = sizeof(response);
 
-                    LOG_INFO(LOG_COMPONENT_SERVER, "Sending settings to client: " << client->processName);
+                    LOG_INFO(LOG_COMPONENT_SERVER,
+                             "Sending settings to client: " << client->processName);
                     return SendPacket(client->socket, &response, sizeof(response));
                 }
                 break;
@@ -541,12 +557,11 @@ namespace Server
                 return false;
 
             default:
-                LOG_WARN(LOG_COMPONENT_SERVER, "Unknown packet type: " << static_cast<int>(header->Type));
+                LOG_WARN(LOG_COMPONENT_SERVER,
+                         "Unknown packet type: " << static_cast<int>(header->Type));
                 return false;
             }
-        }
-        catch (const std::exception &e)
-        {
+        } catch (const std::exception& e) {
             LOG_ERROR(LOG_COMPONENT_SERVER, "Error processing packet: " << e.what());
             return false;
         }
@@ -554,52 +569,69 @@ namespace Server
         return false;
     }
 
-    bool ServerManager::RequestMemoryInfo(int clientPID)
-    {
-        std::shared_lock<std::shared_mutex> lock(m_ClientsMutex);
-        auto it = std::find_if(m_Clients.begin(), m_Clients.end(),
-                               [clientPID](const auto &client)
-                               { return client->pid == clientPID; });
+    bool ServerManager::RequestMemoryInfo(int clientPID) {
+        auto client = FindClientByPID(clientPID);
 
-        if (it == m_Clients.end() || !(*it)->isActive)
-        {
+        if (client == nullptr) {
+            LOG_ERROR(LOG_COMPONENT_SERVER,
+                      "Cannot request memory info - Client not found for PID: " << clientPID);
             return false;
         }
 
         Packets::MemoryRequestPacket packet;
-        packet.Header.Type = Packets::PacketType::MemoryRequest;
-        packet.Header.Size = sizeof(packet);
 
-        LOG_INFO(LOG_COMPONENT_SERVER, "Sending memory request to client: " << (*it)->processName);
-        return SendPacket((*it)->socket, &packet, sizeof(packet));
+        LOG_INFO(LOG_COMPONENT_SERVER, "Sending memory request to client: " << client->processName);
+        return SendPacket(client->socket, &packet, sizeof(packet));
     }
 
-    const std::vector<std::shared_ptr<ClientInfo>> &ServerManager::GetConnectedClients() const
-    {
+    bool ServerManager::RequestItemDump(int clientPID, const char* filter) {
+        ClientInfo* client = FindClientByPID(clientPID);
+        if (!client || client->socket == INVALID_SOCKET || !client->isActive) {
+            return false;
+        }
+
+        Packets::ItemDumpRequestPacket packet;
+        packet.Header = Packets::PacketType::ItemDumpRequest;
+        strncpy(packet.Filter, filter, sizeof(packet.Filter) - 1);
+        packet.Filter[sizeof(packet.Filter) - 1] = '\0';
+
+        return SendPacket(client->socket, &packet, sizeof(packet));
+    }
+
+    void ServerManager::ClearItemDumpState(int clientPID) {
+        ClientInfo* client = FindClientByPID(clientPID);
+        if (client) {
+            client->itemDumpState = Packets::ItemDumpState(); // Reset to default state
+            client->itemDumpState.ItemListSize = 0; // Explicitly clear the list size
+        }
+    }
+
+    const std::vector<std::shared_ptr<ClientInfo>>& ServerManager::GetConnectedClients() const {
         return m_Clients;
     }
 
-    const Packets::SettingsState *ServerManager::GetClientSettings(int clientPID) const
-    {
+    const Packets::SettingsState* ServerManager::GetClientSettings(int clientPID) const {
         std::shared_lock<std::shared_mutex> lock(m_ClientsMutex);
-        auto it = std::find_if(m_Clients.begin(), m_Clients.end(),
-                               [clientPID](const auto &client)
-                               { return client->pid == clientPID; });
+        auto it = std::find_if(m_Clients.begin(), m_Clients.end(), [clientPID](const auto& client) {
+            return client->pid == clientPID;
+        });
 
-        if (it != m_Clients.end())
-        {
+        if (it != m_Clients.end()) {
             return &(*it)->settings;
         }
         return nullptr;
     }
 
-    ClientInfo *ServerManager::FindClientByPID(int clientPID)
-    {
+    ClientInfo* ServerManager::FindClientByPID(int clientPID) {
         std::shared_lock<std::shared_mutex> lock(m_ClientsMutex);
-        auto it = std::find_if(m_Clients.begin(), m_Clients.end(),
-                               [clientPID](const auto &client)
-                               { return client->pid == clientPID; });
+        auto it = std::find_if(m_Clients.begin(), m_Clients.end(), [clientPID](const auto& client) {
+            return client->pid == clientPID;
+        });
 
-        return it != m_Clients.end() ? it->get() : nullptr;
+        if (it != m_Clients.end()) {
+            return it->get();
+        }
+        return nullptr;
     }
-}
+} // namespace Server
+} // namespace FracqServer

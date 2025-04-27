@@ -9,16 +9,19 @@
 #include <string>
 #include <windows.h>
 
+namespace FracqClient {
+
 constexpr int MEMORY_UPDATE_INTERVAL_MS = 250;
 constexpr int SERVER_SYNC_INTERVAL_MS = 500;
 
 constexpr int FARMBOT_INTERVAL_MS = 300;
 constexpr int MAIN_INTERVAL_MS = 10;
+constexpr int PICKUP_INTERVAL_MS = 500;
 
 class ClientApp {
 public:
     ClientApp();
-    ~ClientApp();
+    ~ClientApp() = default;
 
     bool Initialize();
 
@@ -34,7 +37,7 @@ public:
     const Packets::MemoryState& GetMemoryState() const { return m_MemoryState; }
     bool ProcessSettingsPacket(const Packets::SettingsResponsePacket& packet);
     void UpdateMemoryState();
-    void UpdateMemoryState(const Packets::MemoryState& newState);
+    Packets::ItemDumpState GetItemDumpState(const std::string& filter);
 
     bool RequestSettings();
 
@@ -59,3 +62,5 @@ private:
     bool CreateRegisterPacket(Packets::RegisterPacket& packet);
     void SetLastError(const std::string& error);
 };
+
+} // namespace FracqClient

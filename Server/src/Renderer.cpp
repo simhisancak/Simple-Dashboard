@@ -7,16 +7,16 @@
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_win32.h"
 
-std::string GetDXErrorMessage(HRESULT hr)
-{
+namespace FracqServer {
+
+std::string GetDXErrorMessage(HRESULT hr) {
     char buffer[256];
     sprintf_s(buffer, "DirectX Hata Kodu: 0x%08X", static_cast<unsigned int>(hr));
     return std::string(buffer);
 }
 
 Renderer::Renderer(Window* window)
-    : m_Window(window)
-{
+    : m_Window(window) {
     CreateDeviceAndSwapChain();
     CreateRenderTarget();
 
@@ -26,37 +26,33 @@ Renderer::Renderer(Window* window)
     io.IniFilename = nullptr;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    // Performance optimizations with better quality
     io.MouseDrawCursor = false;
     io.ConfigInputTextCursorBlink = false;
     io.ConfigMemoryCompactTimer = 60.0f;
 
     io.Fonts->Clear();
     ImFontConfig config;
-    config.OversampleH = 2; // Increased back for better text quality
-    config.OversampleV = 2; // Increased back for better text quality
+    config.OversampleH = 2;
+    config.OversampleV = 2;
     config.PixelSnapH = true;
-    config.RasterizerMultiply = 1.5f; // Slightly darker font rendering
+    config.RasterizerMultiply = 1.5f;
 
-    static const ImWchar ranges[] = {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
-        0x0100, 0x017F, // Latin Extended-A
-        0x0180, 0x024F, // Latin Extended-B
-        0x0300, 0x036F, // Combining Diacritical Marks
-        0x00C7, 0x00C7, // Latin Capital Letter C with Cedilla
-        0x00E7, 0x00E7, // Latin Small Letter C with Cedilla
-        0x011E, 0x011E, // Latin Capital Letter G with Breve
-        0x011F, 0x011F, // Latin Small Letter G with Breve
-        0x0130, 0x0130, // Latin Capital Letter I with Dot Above
-        0x0131, 0x0131, // Latin Small Letter Dotless I
-        0x015E, 0x015E, // Latin Capital Letter S with Cedilla
-        0x015F, 0x015F, // Latin Small Letter S with Cedilla
-        0x0000
-    };
+    static const ImWchar ranges[] = { 0x0020, 0x00FF, // Basic Latin + Latin Supplement
+                                      0x0100, 0x017F, // Latin Extended-A
+                                      0x0180, 0x024F, // Latin Extended-B
+                                      0x0300, 0x036F, // Combining Diacritical Marks
+                                      0x00C7, 0x00C7, // Latin Capital Letter C with Cedilla
+                                      0x00E7, 0x00E7, // Latin Small Letter C with Cedilla
+                                      0x011E, 0x011E, // Latin Capital Letter G with Breve
+                                      0x011F, 0x011F, // Latin Small Letter G with Breve
+                                      0x0130, 0x0130, // Latin Capital Letter I with Dot Above
+                                      0x0131, 0x0131, // Latin Small Letter Dotless I
+                                      0x015E, 0x015E, // Latin Capital Letter S with Cedilla
+                                      0x015F, 0x015F, // Latin Small Letter S with Cedilla
+                                      0x0000 };
 
     io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\segoeui.ttf", 15.0f, &config, ranges);
 
-    // Optimize style while keeping good visuals
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowRounding = 2.0f;
@@ -69,7 +65,6 @@ Renderer::Renderer(Window* window)
     style.AntiAliasedFill = true;
     style.CurveTessellationTol = 1.0f;
 
-    // Adjust colors for better readability
     ImVec4* colors = style.Colors;
     colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
     colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -82,8 +77,7 @@ Renderer::Renderer(Window* window)
     ImGui_ImplDX11_Init(m_Device, m_DeviceContext);
 }
 
-Renderer::~Renderer()
-{
+Renderer::~Renderer() {
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
@@ -106,8 +100,7 @@ Renderer::~Renderer()
     }
 }
 
-void Renderer::Begin()
-{
+void Renderer::Begin() {
     static const float clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
     m_DeviceContext->ClearRenderTargetView(m_RenderTargetView, clearColor);
     m_DeviceContext->OMSetRenderTargets(1, &m_RenderTargetView, nullptr);
@@ -117,32 +110,29 @@ void Renderer::Begin()
     ImGui::NewFrame();
 }
 
-void Renderer::End()
-{
+void Renderer::End() {
     ImGui::Render();
 
     m_DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-    // Başlangıçta sadece temel present kullanalım
-    HRESULT hr = m_SwapChain->Present(1, 0); // VSync açık başlayalım, stabil olduktan sonra kapatırız
+    HRESULT hr = m_SwapChain->Present(1, 0);
 
     if (FAILED(hr)) {
         throw std::runtime_error("Failed to present swap chain: " + GetDXErrorMessage(hr));
     }
 }
 
-void Renderer::CreateDeviceAndSwapChain()
-{
+void Renderer::CreateDeviceAndSwapChain() {
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
-    sd.BufferCount = 2; // Triple buffering yerine double buffering kullanarak başlangıç stabilitesini artıralım
+    sd.BufferCount = 2;
     sd.BufferDesc.Width = m_Window->GetWidth();
     sd.BufferDesc.Height = m_Window->GetHeight();
     sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
     sd.BufferDesc.RefreshRate.Numerator = 0;
     sd.BufferDesc.RefreshRate.Denominator = 1;
-    sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH; // Başlangıçta sadece temel flag kullanalım
+    sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
     sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     sd.OutputWindow = m_Window->GetHandle();
     sd.SampleDesc.Count = 1;
@@ -158,34 +148,47 @@ void Renderer::CreateDeviceAndSwapChain()
     D3D_FEATURE_LEVEL featureLevel;
     const D3D_FEATURE_LEVEL featureLevelArray[2] = {
         D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1, // Fallback için eklendi
+        D3D_FEATURE_LEVEL_10_1,
     };
 
-    // Önce basit device oluşturma deneyelim
-    HRESULT hr = D3D11CreateDeviceAndSwapChain(
-        nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags,
-        featureLevelArray, 2, D3D11_SDK_VERSION,
-        &sd, &m_SwapChain, &m_Device, &featureLevel, &m_DeviceContext);
+    HRESULT hr = D3D11CreateDeviceAndSwapChain(nullptr,
+                                               D3D_DRIVER_TYPE_HARDWARE,
+                                               nullptr,
+                                               createDeviceFlags,
+                                               featureLevelArray,
+                                               2,
+                                               D3D11_SDK_VERSION,
+                                               &sd,
+                                               &m_SwapChain,
+                                               &m_Device,
+                                               &featureLevel,
+                                               &m_DeviceContext);
 
     if (FAILED(hr)) {
-        // Eğer başarısız olursa, WARP device ile deneyelim
-        hr = D3D11CreateDeviceAndSwapChain(
-            nullptr, D3D_DRIVER_TYPE_WARP, nullptr, createDeviceFlags,
-            featureLevelArray, 2, D3D11_SDK_VERSION,
-            &sd, &m_SwapChain, &m_Device, &featureLevel, &m_DeviceContext);
+        hr = D3D11CreateDeviceAndSwapChain(nullptr,
+                                           D3D_DRIVER_TYPE_WARP,
+                                           nullptr,
+                                           createDeviceFlags,
+                                           featureLevelArray,
+                                           2,
+                                           D3D11_SDK_VERSION,
+                                           &sd,
+                                           &m_SwapChain,
+                                           &m_Device,
+                                           &featureLevel,
+                                           &m_DeviceContext);
 
         if (FAILED(hr))
-            throw std::runtime_error("Failed to create device and swap chain: " + GetDXErrorMessage(hr));
+            throw std::runtime_error("Failed to create device and swap chain: "
+                                     + GetDXErrorMessage(hr));
     }
 
-    // Temel performans optimizasyonları
     IDXGIDevice1* dxgiDevice;
     if (SUCCEEDED(m_Device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)))) {
         dxgiDevice->SetMaximumFrameLatency(1);
         dxgiDevice->Release();
     }
 
-    // Basit rasterizer state
     D3D11_RASTERIZER_DESC rasterDesc;
     ZeroMemory(&rasterDesc, sizeof(D3D11_RASTERIZER_DESC));
     rasterDesc.FillMode = D3D11_FILL_SOLID;
@@ -204,8 +207,7 @@ void Renderer::CreateDeviceAndSwapChain()
     }
 }
 
-void Renderer::CreateRenderTarget()
-{
+void Renderer::CreateRenderTarget() {
     ID3D11Texture2D* pBackBuffer;
     HRESULT hr = m_SwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
     if (FAILED(hr))
@@ -217,3 +219,5 @@ void Renderer::CreateRenderTarget()
     if (FAILED(hr))
         throw std::runtime_error("Failed to create render target view: " + GetDXErrorMessage(hr));
 }
+
+} // namespace FracqServer

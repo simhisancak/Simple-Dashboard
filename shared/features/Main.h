@@ -3,7 +3,7 @@
 
 namespace Packets {
 
-enum class DamageType : uint8_t { None, WaitHack, RangeDamage };
+enum class DamageType : uint8_t { WaitHack, RangeDamage, RangeDamageSafe };
 
 struct MainState {
     float AreaSize;
@@ -24,9 +24,9 @@ struct MainState {
         , ClearRam(false)
         , DamageEnabled(false)
         , Pickup(false)
-        , DamageType(DamageType::None)
+        , DamageType(DamageType::WaitHack)
         , DamageDelay(200)
-        , DamageCount(3)
+        , DamageCount(1)
         , DamageLimit(10) { }
 };
 } // namespace Packets

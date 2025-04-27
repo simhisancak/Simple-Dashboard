@@ -3,6 +3,8 @@
 #include <algorithm>
 
 #include "../globals/Globals.h"
+#include "common/Helper.h"
+namespace FracqClient {
 
 bool Helper::CompareInstances(const Instance& a, const Instance& b) {
     auto posA = a.GetPixelPosition();
@@ -33,17 +35,17 @@ bool Helper::CompareGroundItems(const GroundItem& a, const GroundItem& b) {
 
 Instance Helper::GetMainActor() {
     return Instance::FromAddress(
-        Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + 0xC));
+        Common::Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + 0xC));
 }
 
 CharacterInstanceMap Helper::getAlivaInstMap() {
-    uintptr_t m_kAliveInstMap_p = Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager
-                                                          + Globals::Get()->m_kAliveInstMapOffset);
+    uintptr_t m_kAliveInstMap_p = Common::Memory::Read<uintptr_t>(
+        Globals::Get()->PythonCharacterManager + Globals::Get()->m_kAliveInstMapOffset);
     if (m_kAliveInstMap_p < 0x10000) {
         return CharacterInstanceMap();
     }
 
-    uintptr_t m_kAliveInstMap_map = Memory::Read<uintptr_t>(m_kAliveInstMap_p + 0x4);
+    uintptr_t m_kAliveInstMap_map = Common::Memory::Read<uintptr_t>(m_kAliveInstMap_p + 0x4);
     if (m_kAliveInstMap_map < 0x10000) {
         return CharacterInstanceMap();
     }
@@ -80,7 +82,7 @@ std::vector<Packets::Instance> Helper::getMobs(MobType targetTypes) {
             continue;
 
         packet.VID = iIndex;
-        packet.Name = instance.GetName();
+        strcpy(packet.Name, instance.GetName().c_str());
         packet.Position = pos;
         packet.Type = type;
 
@@ -122,18 +124,22 @@ std::vector<Instance> Helper::getMobList(MobType targetTypes) {
 }
 
 void Helper::setAttackVid(uint32_t vid) {
-    Memory::Write<uint32_t>(Globals::Get()->PythonPlayer + Globals::Get()->SetAttackVidOffset, vid);
+    Common::Memory::Write<uint32_t>(Globals::Get()->PythonPlayer
+                                        + Globals::Get()->SetAttackVidOffset,
+                                    vid);
 }
 
 void Helper::setAttackState(bool state) {
     uint32_t _state = state ? 3 : 0;
 
-    Memory::Write<uint32_t>(Globals::Get()->PythonPlayer + Globals::Get()->SetAttackStateOffset,
-                            _state);
+    Common::Memory::Write<uint32_t>(Globals::Get()->PythonPlayer
+                                        + Globals::Get()->SetAttackStateOffset,
+                                    _state);
 }
 
 uint32_t Helper::getTargetVid() {
-    return Memory::Read<uint32_t>(Globals::Get()->PythonPlayer + Globals::Get()->TargetVidOffset);
+    return Common::Memory::Read<uint32_t>(Globals::Get()->PythonPlayer
+                                          + Globals::Get()->TargetVidOffset);
 }
 
 void Helper::RenderCondition(bool enable) {
@@ -141,11 +147,15 @@ void Helper::RenderCondition(bool enable) {
     const BYTE disable_bytes[] = { 0x0F, 0x85 };
 
     if (enable) {
-        Memory::PatchBytes(Globals::Get()->RenderCondition, enable_bytes, sizeof(enable_bytes));
+        Common::Memory::PatchBytes(Globals::Get()->RenderCondition,
+                                   enable_bytes,
+                                   sizeof(enable_bytes));
         return;
     }
 
-    Memory::PatchBytes(Globals::Get()->RenderCondition, disable_bytes, sizeof(disable_bytes));
+    Common::Memory::PatchBytes(Globals::Get()->RenderCondition,
+                               disable_bytes,
+                               sizeof(disable_bytes));
 }
 
 bool Helper::ClearRam() {
@@ -189,11 +199,15 @@ void Helper::SendAttackPacket(uint32_t vid) {
     uintptr_t netptr = Globals::Get()->PythonNetworkStream;
     uintptr_t attackcall = Globals::Get()->SendAttackPacket;
 
-    __asm {
-        mov ecx, netptr
-        push vid
-        push 0
-        call attackcall
+    __try {
+        __asm {
+            mov ecx, netptr
+            push vid
+            push 0
+            call attackcall
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        // Handle exception silently
     }
 }
 
@@ -207,25 +221,29 @@ void Helper::SendCharacterStatePacket(Math::Vector3* pos,
     _pos.x = _pos.x * 100.0f;
     _pos.y = _pos.y * 100.0f;
 
-    __asm {
-        mov ecx, netptr
-        push uArg
-        push eFunc
-        push rot
-        lea eax, _pos
-        push eax
-        call sendstatecall
+    __try {
+        __asm {
+            mov ecx, netptr
+            push uArg
+            push eFunc
+            push rot
+            lea eax, _pos
+            push eax
+            call sendstatecall
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        // Handle exception silently
     }
 }
 
 ItemMap Helper::getItemMap() {
-    uintptr_t m_ItemMap_p = Memory::Read<uintptr_t>(Globals::Get()->ItemManager
-                                                    + Globals::Get()->ItemMapOffset);
+    uintptr_t m_ItemMap_p = Common::Memory::Read<uintptr_t>(Globals::Get()->ItemManager
+                                                            + Globals::Get()->ItemMapOffset);
     if (m_ItemMap_p < 0x10000) {
         return ItemMap();
     }
 
-    uintptr_t m_ItemMap = Memory::Read<uintptr_t>(m_ItemMap_p + 0x4);
+    uintptr_t m_ItemMap = Common::Memory::Read<uintptr_t>(m_ItemMap_p + 0x4);
     if (m_ItemMap < 0x10000) {
         return ItemMap();
     }
@@ -249,13 +267,13 @@ std::vector<Item> Helper::GetItemList() {
 }
 
 GroundItemMap Helper::getGroundItemMap() {
-    uintptr_t m_GroundItemMap_p = Memory::Read<uintptr_t>(Globals::Get()->PythonItem
-                                                          + Globals::Get()->GroundItemMapOffset);
+    uintptr_t m_GroundItemMap_p = Common::Memory::Read<uintptr_t>(
+        Globals::Get()->PythonItem + Globals::Get()->GroundItemMapOffset);
     if (m_GroundItemMap_p < 0x10000) {
         return GroundItemMap();
     }
 
-    uintptr_t m_GroundItemMap = Memory::Read<uintptr_t>(m_GroundItemMap_p + 0x4);
+    uintptr_t m_GroundItemMap = Common::Memory::Read<uintptr_t>(m_GroundItemMap_p + 0x4);
     if (m_GroundItemMap < 0x10000) {
         return GroundItemMap();
     }
@@ -274,10 +292,15 @@ std::vector<GroundItem> Helper::getGroundItemList() {
         if (!groundItem.IsValid())
             continue;
 
-        if (groundItem.GetOwnership().length() > 0
-            && groundItem.GetOwnership() != mainActor.GetName()) {
+        std::string ownership = groundItem.GetOwnership();
+        std::string playerName = mainActor.GetName();
+
+        if (!ownership.empty() && ownership.compare(playerName) != 0) {
             continue;
         }
+
+        LOG_ERROR(LOG_COMPONENT_CLIENTAPP,
+                  "Ownership: " << ownership << " Player Name: " << playerName);
 
         groundItemList.push_back(groundItem);
     }
@@ -289,9 +312,86 @@ void Helper::SendClickItemPacket(uint32_t vid) {
     uintptr_t pythonplayer = Globals::Get()->PythonPlayer;
     uintptr_t clickitemcall = Globals::Get()->SendClickItemPacket;
 
-    __asm {
-        mov ecx, pythonplayer
-        push vid
-        call clickitemcall
+    __try {
+        __asm {
+            mov ecx, pythonplayer
+            push vid
+            call clickitemcall
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        // Handle exception silently
     }
 }
+
+void Helper::MoveTo(const Math::Vector3& fromPos, const Math::Vector3& toPos) {
+    auto points = DivideTwoPointsByDistance(2, fromPos, toPos);
+    for (auto& point : points) {
+        SendCharacterStatePacket(&point, 0, 0, 0);
+        Sleep(3);
+    }
+}
+
+std::vector<Instance> Helper::FilterByAreaSize(const std::vector<Instance>& mobList,
+                                               const Math::Vector3& mainActorPos,
+                                               float areaSize) {
+    std::vector<Instance> filtered;
+    for (const auto& mob : mobList) {
+        if (mainActorPos.DistanceTo(mob.GetPixelPosition()) <= areaSize) {
+            filtered.push_back(mob);
+        }
+    }
+    return filtered;
+}
+
+Math::Vector3
+Helper::ClampDistance(const Math::Vector3& origin, const Math::Vector3& target, float maxDistance) {
+    auto direction = target - origin;
+    float distance = direction.Length();
+    if (distance > maxDistance && distance > 0.0001f) {
+        direction = direction * (maxDistance / distance);
+        return origin + direction;
+    }
+    return target;
+}
+
+Math::Vector3 Helper::CalculateCircularMovement(const Math::Vector3& center,
+                                                float radius,
+                                                float angle,
+                                                float step) {
+    float newAngle = angle + step;
+    float x = center.x + radius * cos(newAngle);
+    float y = center.y + radius * sin(newAngle);
+    return Math::Vector3(x, y, center.z);
+}
+
+bool Helper::IsMobNearPosition(const Math::Vector3& position,
+                               const std::vector<Instance>& mobList,
+                               float threshold) {
+    for (const auto& mob : mobList) {
+        if (position.DistanceTo(mob.GetPixelPosition()) < threshold) {
+            return true;
+        }
+    }
+    return false;
+}
+
+uintptr_t Helper::GetInstanceByVID(uint32_t vid) {
+    uintptr_t charactermanager = Globals::Get()->PythonCharacterManager;
+    uintptr_t _ptr = 0;
+
+    __try {
+        __asm {
+            mov ecx, charactermanager
+            push vid
+            add ecx, 4
+            mov eax, [ecx]
+            call [eax + 8]
+            mov _ptr, eax
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return 0;
+    }
+
+    return _ptr;
+}
+} // namespace FracqClient

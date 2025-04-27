@@ -44,6 +44,7 @@ set(CONTENT_FILES
     src/UI/Views/Dashboard/Content/Main/Main.cpp
     src/UI/Views/Dashboard/Content/FarmBot/FarmBot.cpp
     src/UI/Views/Dashboard/Content/SaveLoad/SaveLoad.cpp
+    src/UI/Views/Dashboard/Content/Pickup/Pickup.cpp
 )
 
 # View kaynak dosyaları
@@ -84,6 +85,7 @@ set(SOURCE_FILES
     src/Utils/Injector/ManualMap.cpp
     src/Utils/Injector/Injector.cpp
     src/common/Logger.cpp
+    src/common/Helper.cpp
     ${SERVER_FILES}
     ${VIEW_FILES}
     ${COMPONENT_FILES}

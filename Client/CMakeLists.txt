@@ -60,6 +60,7 @@ set(NETWORK_FILES
 # Common kaynak dosyaları
 set(COMMON_FILES
     src/common/Logger.cpp
+    src/common/Helper.cpp
 )
 
 # Hack kaynak dosyaları

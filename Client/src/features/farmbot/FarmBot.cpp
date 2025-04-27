@@ -7,11 +7,12 @@
 #include "hack/helper/Helper.h"
 #include "hack/instance/Instance.h"
 
+namespace FracqClient {
+
 bool FarmBot::m_FixedRange = false;
 Math::Vector3 FarmBot::m_FixedRangePos;
 Instance LastMob = Instance { 0 };
 
-// Add static variable for timing
 static auto lastWaitHackTime = std::chrono::steady_clock::now();
 
 Instance FarmBot::getAttackableMob(float distance, MobType targetTypes) {
@@ -175,3 +176,5 @@ void FarmBot::Loop() {
         LOG_DEBUG(LOG_COMPONENT_FARMBOT, "Auto-looting enabled, collecting items...");
     }
 }
+
+} // namespace FracqClient

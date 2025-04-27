@@ -1,3 +1,7 @@
 #include "Globals.h"
 
-Globals *Globals::instance = nullptr;
+namespace FracqClient {
+
+Globals* Globals::instance = nullptr;
+
+} // namespace FracqClient

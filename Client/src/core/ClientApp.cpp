@@ -5,9 +5,13 @@
 
 #include "Memory.h"
 #include "common/Logger.h"
+#include "../common/Helper.h"
 #include "features/Features.h"
 #include "features/farmbot/FarmBot.h"
 #include "features/main/Main.h"
+
+namespace FracqClient {
+
 ClientApp::ClientApp()
     : m_NetworkClient(std::make_unique<Network::NetworkClient>(this))
     , m_TaskManager(std::make_unique<Common::TaskManager>())
@@ -21,8 +25,6 @@ ClientApp::ClientApp()
 
     ZeroMemory(&m_SettingsState, sizeof(m_SettingsState));
 }
-
-ClientApp::~ClientApp() { LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Destroying client application"); }
 
 bool ClientApp::Initialize() {
     LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Initializing client");
@@ -82,23 +84,33 @@ void ClientApp::UpdateMemoryState() {
     auto mainActor = Helper::GetMainActor();
     Packets::Instance instance;
     instance.VID = mainActor.GetVID();
-    instance.Name = mainActor.GetName();
+    strcpy(instance.Name, mainActor.GetName().c_str());
     instance.Position = mainActor.GetPixelPosition();
     instance.Type = mainActor.GetType();
     m_MemoryState.MainActor = instance;
 }
 
-void ClientApp::UpdateMemoryState(const Packets::MemoryState& newState) {
-    LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Updating memory state");
-    uint64_t oldModuleBase = m_MemoryState.ModuleBase;
-    uint32_t oldModuleSize = m_MemoryState.ModuleSize;
-    HANDLE oldHandle = m_MemoryState.hproc;
+Packets::ItemDumpState ClientApp::GetItemDumpState(const std::string& filter) {
+    Packets::ItemDumpState itemDumpState;
+    itemDumpState.ItemListSize = 0;
 
-    m_MemoryState = newState;
+    auto itemDumps = Helper::GetItemList();
+    size_t addedItems = 0;
 
-    m_MemoryState.ModuleBase = oldModuleBase;
-    m_MemoryState.ModuleSize = oldModuleSize;
-    m_MemoryState.hproc = oldHandle;
+    for (const auto& item : itemDumps) {
+        std::string itemName = item.GetName();
+
+        if (filter.empty() || Common::Helper::ContainsCaseInsensitive(itemName, filter)) {
+            if (addedItems < Packets::MAX_ITEM_LIST_SIZE) {
+                itemDumpState.ItemList[addedItems].Vnum = item.GetVnum();
+                strcpy(itemDumpState.ItemList[addedItems].Name, itemName.c_str());
+                addedItems++;
+            }
+        }
+    }
+
+    itemDumpState.ItemListSize = addedItems;
+    return itemDumpState;
 }
 
 bool ClientApp::RegisterWithServer() {
@@ -166,13 +178,6 @@ void ClientApp::ResetRegistration() {
 }
 
 bool ClientApp::ProcessSettingsPacket(const Packets::SettingsResponsePacket& packet) {
-    LOG_INFO(LOG_COMPONENT_CLIENTAPP, "Received settings packet from server:");
-    LOG_DEBUG(LOG_COMPONENT_CLIENTAPP,
-              "  FarmBot Status: " << (packet.State.FarmBot.FarmBotStatus ? "ON" : "OFF"));
-    LOG_DEBUG(LOG_COMPONENT_CLIENTAPP,
-              "  AutoLoot: " << (packet.State.FarmBot.AutoLoot ? "ON" : "OFF"));
-    LOG_DEBUG(LOG_COMPONENT_CLIENTAPP, "  Area Size: " << packet.State.FarmBot.AreaSize);
-
     m_SettingsState = packet.State;
     return true;
 }
@@ -224,3 +229,5 @@ bool ClientApp::RequestSettings() {
 
     return true;
 }
+
+} // namespace FracqClient

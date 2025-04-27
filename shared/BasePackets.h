@@ -28,35 +28,23 @@ struct MobTypeUI {
     MobType type;
 };
 
-struct GroundItemInstance {
-    uint32_t instance;
-    uint32_t virtualNumber;
-    Math::Vector3 endPosition;
-    Math::Vector3 rotationAxis;
-    Math::Vector4 quaternionEnd;
-    Math::Vector3 center;
-    uint32_t* thingInstance;
-    uint32_t startTime;
-    uint32_t endTime;
-    uint32_t dropSoundType;
-    BYTE dummy[0x2A8];
-    std::string ownership;
-};
-
 namespace Packets {
 
 enum class PacketType : uint8_t {
-    Register = 0x01,
-    Heartbeat = 0x02,
-    Disconnect = 0x03,
-    HealthCheck = 0x04,
-    Ack = 0x05,
+    Register,
+    Heartbeat,
+    Disconnect,
+    HealthCheck,
+    Ack,
 
-    MemoryRequest = 0x06,
-    MemoryResponse = 0x07,
+    MemoryRequest,
+    MemoryResponse,
 
-    SettingsRequest = 0x08,
-    SettingsResponse = 0x09
+    SettingsRequest,
+    SettingsResponse,
+
+    ItemDumpRequest,
+    ItemDumpResponse
 };
 
 struct PacketHeader {

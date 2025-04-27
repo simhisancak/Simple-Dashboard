@@ -3,15 +3,18 @@
 #include "BasePackets.h"
 #include "features/Farmbot.h"
 #include "features/Main.h"
+#include "features/Pickup.h"
 
 namespace Packets {
 struct SettingsState {
     FarmBotState FarmBot;
     MainState Main;
+    PickupState Pickup;
 
     SettingsState()
         : FarmBot()
-        , Main() { }
+        , Main()
+        , Pickup() { }
 };
 
 struct SettingsRequestPacket {

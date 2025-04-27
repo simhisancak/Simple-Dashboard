@@ -12,21 +12,21 @@
 #include <iostream>
 #include <thread>
 
+namespace FracqServer {
+
 Application::Application(const std::string& name, int width, int height)
     : m_Name(name)
     , m_Width(width)
-    , m_Height(height)
-{
+    , m_Height(height) {
     std::cout << "Starting Fracq Application..." << std::endl;
 
     try {
         m_Window = std::make_unique<Window>(name, width, height);
         m_Renderer = std::make_unique<Renderer>(m_Window.get());
-        m_AuthManager = std::make_unique<AuthManager>();
-        m_UIManager = std::make_unique<UIManager>(this, m_Renderer.get());
+        m_AuthManager = std::make_unique<::AuthManager>();
+        m_UIManager = std::make_unique<UI::UIManager>(this, m_Renderer.get());
         m_ServerManager = std::make_unique<Server::ServerManager>(this);
 
-        // Temayı uygula
         UI::Theme::Apply();
 
         if (!m_ServerManager->Start(8888)) {
@@ -42,8 +42,7 @@ Application::Application(const std::string& name, int width, int height)
 
 Application::~Application() { Shutdown(); }
 
-void Application::Run()
-{
+void Application::Run() {
     m_Running = true;
     m_LastFrameTime = Utils::Timer::GetTime();
 
@@ -69,8 +68,7 @@ void Application::Run()
     std::cout << "Application loop terminated." << std::endl;
 }
 
-void Application::Shutdown()
-{
+void Application::Shutdown() {
     if (!m_Running)
         return;
 
@@ -91,23 +89,20 @@ void Application::Shutdown()
     std::cout << "Application resources cleaned up." << std::endl;
 }
 
-void Application::Update()
-{
+void Application::Update() {
     m_Window->PollEvents();
     if (m_UIManager)
         m_UIManager->Update();
 }
 
-void Application::Render()
-{
+void Application::Render() {
     m_Renderer->Begin();
     if (m_UIManager)
         m_UIManager->Render();
     m_Renderer->End();
 }
 
-void Application::LimitFrameRate()
-{
+void Application::LimitFrameRate() {
     double currentTime = Utils::Timer::GetTime();
     double deltaTime = currentTime - m_LastFrameTime;
 
@@ -126,3 +121,5 @@ void Application::LimitFrameRate()
 
     m_LastFrameTime = currentTime;
 }
+
+} // namespace FracqServer

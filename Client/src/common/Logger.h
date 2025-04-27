@@ -48,7 +48,7 @@ namespace Common {
 #endif
 
 #ifndef LOG_TO_FILE
-#define LOG_TO_FILE true
+#define LOG_TO_FILE 0
 #endif
 
 class Logger {

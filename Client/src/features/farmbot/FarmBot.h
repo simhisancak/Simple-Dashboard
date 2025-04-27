@@ -8,6 +8,8 @@
 #include "hack/helper/Helper.h"
 #include "hack/instance/Instance.h"
 
+namespace FracqClient {
+
 // Forward declarations
 class ClientApp;
 
@@ -23,3 +25,5 @@ private:
     static bool m_FixedRange;
     static Math::Vector3 m_FixedRangePos;
 };
+
+} // namespace FracqClient

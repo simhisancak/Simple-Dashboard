@@ -1,13 +1,14 @@
 #pragma once
 
-#include "../../View.h"
+#include "UI/View.h"
+#include "UI/Components/Layout.h"
 #include "../../Components/Button.h"
 #include "../../Components/Checkbox.h"
 #include "../../Components/InputText.h"
-#include "../../Components/Layout.h"
 #include <string>
 #include <memory>
 
+namespace FracqServer {
 namespace UI {
     namespace Views {
         class LoginViewState : public IViewState {
@@ -47,5 +48,6 @@ namespace UI {
             std::shared_ptr<Components::Checkbox> m_ShowPasswordCheckbox;
             std::shared_ptr<Components::Button> m_LoginButton;
         };
-    }
-} 
+    } // namespace Views
+} // namespace UI
+} // namespace FracqServer

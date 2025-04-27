@@ -5,6 +5,8 @@
 #include <dxgi.h>
 #include <memory>
 
+namespace FracqServer {
+
 class Renderer {
 public:
     Renderer(Window* window);
@@ -28,3 +30,5 @@ private:
     IDXGISwapChain* m_SwapChain = nullptr;
     ID3D11RenderTargetView* m_RenderTargetView = nullptr;
 };
+
+} // namespace FracqServer

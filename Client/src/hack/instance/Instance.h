@@ -2,6 +2,9 @@
 #include "FracqMath.hpp"
 #include "common/Memory.hpp"
 #include "../globals/Globals.h"
+#include <string>
+
+namespace FracqClient {
 
 class Instance {
 private:
@@ -22,3 +25,5 @@ public:
 
     static Instance FromAddress(uintptr_t address) { return Instance(address); }
 };
+
+} // namespace FracqClient

@@ -8,9 +8,11 @@
 #include "../instance/Instance.h"
 #include "../item/Item.h"
 #include "../groundItem/GroundItem.h"
-#include "Instance.h"
 #include "common/Logger.h"
 #include "features/Farmbot.h"
+#include "PacketTypes.h"
+
+namespace FracqClient {
 
 typedef std::map<uint32_t, uintptr_t> CharacterInstanceMap;
 typedef std::map<uint32_t, uintptr_t> ItemMap;
@@ -39,8 +41,24 @@ public:
     static GroundItemMap getGroundItemMap();
     static std::vector<GroundItem> getGroundItemList();
     static void SendClickItemPacket(uint32_t vid);
+    static void MoveTo(const Math::Vector3& fromPos, const Math::Vector3& toPos);
+    static std::vector<Instance> FilterByAreaSize(const std::vector<Instance>& mobList,
+                                                  const Math::Vector3& mainActorPos,
+                                                  float areaSize);
+
+    static Math::Vector3
+    CalculateCircularMovement(const Math::Vector3& center, float radius, float angle, float step);
+    static bool IsMobNearPosition(const Math::Vector3& position,
+                                  const std::vector<Instance>& mobList,
+                                  float threshold);
+
+    static Math::Vector3
+    ClampDistance(const Math::Vector3& origin, const Math::Vector3& target, float maxDistance);
+    static uintptr_t GetInstanceByVID(uint32_t vid);
 
 private:
     static CharacterInstanceMap getAlivaInstMap();
     static ItemMap getItemMap();
 };
+
+} // namespace FracqClient

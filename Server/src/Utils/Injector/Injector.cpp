@@ -2,9 +2,44 @@
 #include <fstream>
 #include <iostream>
 
-Injector::Injector() {}
+namespace FracqServer {
 
-Injector::~Injector() {}
+bool Injector::InjectByPIDLoadLibrary(DWORD pid, const std::string& dllPath) {
+    if (!EnableDebugPrivilege()) {
+        m_LastError = "Failed to enable debug privilege";
+    }
+
+    HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+    if (!hProc) {
+        m_LastError = "Failed to open process";
+        return false;
+    }
+
+    bool result = ValidateAndPrepareInjection(hProc, dllPath);
+    if (!result) {
+        CloseHandle(hProc);
+        return false;
+    }
+
+    void* loc = VirtualAllocEx(hProc, 0, MAX_PATH, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+
+    if (!WriteProcessMemory(hProc, loc, dllPath.c_str(), dllPath.length() + 1, 0)) {
+        CloseHandle(hProc);
+        return false;
+    }
+
+    HANDLE hThread
+        = CreateRemoteThread(hProc, 0, 0, (LPTHREAD_START_ROUTINE)LoadLibraryA, loc, 0, 0);
+    if (!hThread) {
+        VirtualFree(loc, dllPath.length() + 1, MEM_RELEASE);
+        CloseHandle(hProc);
+        return false;
+    }
+    CloseHandle(hProc);
+    VirtualFree(loc, dllPath.length() + 1, MEM_RELEASE);
+    CloseHandle(hThread);
+    return true;
+}
 
 std::wstring Injector::StringToWString(const std::string& str) {
     int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
@@ -22,9 +57,17 @@ bool Injector::InjectByProcessName(const std::string& processName, const std::st
     return InjectByPID(pid, dllPath);
 }
 
-bool Injector::InjectByPID(DWORD pid, const std::string& dllPath) {
-    std::cout << "Process PID: " << pid << std::endl;
+bool Injector::InjectByProcessNameLoadLibrary(const std::string& processName,
+                                              const std::string& dllPath) {
+    DWORD pid = GetProcessIdByName(processName);
+    if (pid == 0) {
+        m_LastError = "Process not found";
+        return false;
+    }
+    return InjectByPIDLoadLibrary(pid, dllPath);
+}
 
+bool Injector::InjectByPID(DWORD pid, const std::string& dllPath) {
     if (!EnableDebugPrivilege()) {
         m_LastError = "Failed to enable debug privilege";
     }
@@ -43,7 +86,7 @@ bool Injector::InjectByPID(DWORD pid, const std::string& dllPath) {
 
     result = LoadAndInjectDll(hProc, dllPath);
     CloseHandle(hProc);
-    
+
     return result;
 }
 
@@ -103,7 +146,7 @@ bool Injector::ValidateAndPrepareInjection(HANDLE hProc, const std::string& dllP
 bool Injector::EnableDebugPrivilege() {
     TOKEN_PRIVILEGES priv = { 0 };
     HANDLE hToken = NULL;
-    
+
     if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
         priv.PrivilegeCount = 1;
         priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
@@ -155,4 +198,6 @@ bool Injector::LoadAndInjectDll(HANDLE hProc, const std::string& dllPath) {
     }
 
     return true;
-} 
+}
+
+} // namespace FracqServer

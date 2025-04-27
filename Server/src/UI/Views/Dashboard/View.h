@@ -7,43 +7,45 @@
 #include "UI/View.h"
 #include <memory>
 
+namespace FracqServer {
 namespace UI {
-namespace Views {
+    namespace Views {
 
-    enum class DashboardContentType { None, Main, FarmBot, SaveLoad };
+        enum class DashboardContentType { None, Main, FarmBot, SaveLoad };
 
-    class DashboardViewState : public IViewState {
-    public:
-        void Reset() override {
-            activeContent = nullptr;
-            selectedPid = -1;
-        }
+        class DashboardViewState : public IViewState {
+        public:
+            void Reset() override {
+                activeContent = nullptr;
+                selectedPid = -1;
+            }
 
-        const DashboardContent* activeContent = nullptr;
-        int selectedPid = -1;
-    };
+            const DashboardContent* activeContent = nullptr;
+            int selectedPid = -1;
+        };
 
-    class DashboardView : public View {
-    public:
-        DashboardView(Application* app, Renderer* renderer);
-        virtual ~DashboardView() = default;
+        class DashboardView : public View {
+        public:
+            DashboardView(Application* app, Renderer* renderer);
+            virtual ~DashboardView() = default;
 
-        virtual void Update() override;
-        virtual void Render() override;
-        virtual const char* GetViewId() const override;
-        virtual std::unique_ptr<IViewState> CreateState() override;
+            virtual void Update() override;
+            virtual void Render() override;
+            virtual const char* GetViewId() const override;
+            virtual std::unique_ptr<IViewState> CreateState() override;
 
-        static const char* GetStaticViewId() { return "DashboardView"; }
+            static const char* GetStaticViewId() { return "DashboardView"; }
 
-    private:
-        void RenderDockspace();
+        private:
+            void RenderDockspace();
 
-        std::unique_ptr<DashboardHeader> m_Header;
-        std::unique_ptr<DashboardSidebar> m_Sidebar;
-        std::unique_ptr<DashboardMainContent> m_MainContent;
+            std::unique_ptr<DashboardHeader> m_Header;
+            std::unique_ptr<DashboardSidebar> m_Sidebar;
+            std::unique_ptr<DashboardMainContent> m_MainContent;
 
-        const DashboardContent* m_ActiveContent = nullptr;
-        int m_SelectedPid = -1;
-    };
-}
-}
+            const DashboardContent* m_ActiveContent = nullptr;
+            int m_SelectedPid = -1;
+        };
+    } // namespace Views
+} // namespace UI
+} // namespace FracqServer

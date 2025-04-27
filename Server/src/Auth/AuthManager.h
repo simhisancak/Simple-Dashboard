@@ -13,6 +13,6 @@ public:
     const std::string& GetLastError() const { return m_LastError; }
 
 private:
-    bool m_IsLoggedIn = false;
+    bool m_IsLoggedIn = true;
     std::string m_LastError;
-}; 
+};

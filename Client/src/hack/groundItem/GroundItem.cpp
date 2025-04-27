@@ -1,21 +1,29 @@
 #include "GroundItem.h"
 #include <windows.h>
+#include "common/Helper.h"
+
+namespace FracqClient {
+
+namespace {
+    __declspec(noinline) const char* GetOwnershipInternal(uintptr_t address, size_t offset) {
+        const char* ownership = "";
+        __try {
+            ownership = reinterpret_cast<const char*>(address + offset);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            return "";
+        }
+        return ownership;
+    }
+}
 
 std::string GroundItem::GetOwnership() const {
     if (!IsValid()) {
         return "";
     }
 
-    const char* ansiStr = reinterpret_cast<const char*>(
-        m_Address + Globals::Get()->GroundItemOwnershipOffset);
-
-    wchar_t wideBuffer[65];
-    MultiByteToWideChar(1254, 0, ansiStr, -1, wideBuffer, 65);
-
-    char utf8Buffer[195];
-    WideCharToMultiByte(CP_UTF8, 0, wideBuffer, -1, utf8Buffer, sizeof(utf8Buffer), NULL, NULL);
-
-    return std::string(utf8Buffer);
+    const char* ownership = GetOwnershipInternal(m_Address,
+                                                 Globals::Get()->GroundItemOwnershipOffset);
+    return Common::Helper::ConvertToUTF8(ownership);
 }
 
 Math::Vector3 GroundItem::GetPixelPosition() const {
@@ -24,7 +32,17 @@ Math::Vector3 GroundItem::GetPixelPosition() const {
     }
 
     return Math::Vector3(
-        abs(Memory::Read<float>(m_Address + Globals::Get()->GroundItemPosXOffset) / 100.0f),
-        abs(Memory::Read<float>(m_Address + Globals::Get()->GroundItemPosYOffset) / 100.0f),
+        abs(Common::Memory::Read<float>(m_Address + Globals::Get()->GroundItemPosXOffset) / 100.0f),
+        abs(Common::Memory::Read<float>(m_Address + Globals::Get()->GroundItemPosYOffset) / 100.0f),
         0);
 }
+
+uint32_t GroundItem::GetVnum() const {
+    if (!IsValid()) {
+        return 0;
+    }
+
+    return Common::Memory::Read<uint32_t>(m_Address + Globals::Get()->GroundItemVnumOffset);
+}
+
+} // namespace FracqClient

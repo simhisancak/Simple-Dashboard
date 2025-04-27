@@ -1,10 +1,14 @@
 #pragma once
 #include "FracqMath.hpp"
 #include "common/Memory.hpp"
-#include "../globals/Globals.h"
+#include "hack/globals/Globals.h"
+#include "PacketTypes.h"
+#include <map>
 #include <string>
 
 namespace FracqClient {
+
+typedef std::map<uint32_t, uintptr_t> CharacterInstanceMap;
 
 class Instance {
 private:
@@ -24,6 +28,15 @@ public:
     std::string GetName() const;
 
     static Instance FromAddress(uintptr_t address) { return Instance(address); }
+};
+
+class InstanceHelper {
+public:
+    static Instance GetMainActor();
+    static CharacterInstanceMap getAlivaInstMap();
+    static std::vector<Instance> getMobList(MobType targetTypes);
+    static std::vector<Packets::Instance> getMobs(MobType targetTypes);
+    static uintptr_t GetInstanceByVID(uint32_t vid);
 };
 
 } // namespace FracqClient

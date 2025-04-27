@@ -68,9 +68,11 @@ set(HACK_FILES
     src/hack/globals/Globals.cpp
     src/hack/helper/Helper.cpp
     src/hack/instance/Instance.cpp
+    src/hack/instance/InstanceHelper.cpp
     src/hack/item/Item.cpp
+    src/hack/item/ItemHelper.cpp
     src/hack/groundItem/GroundItem.cpp
-    
+    src/hack/groundItem/GroundItemHelper.cpp
 )
 
 # Core kaynak dosyaları

@@ -16,13 +16,13 @@ Instance LastMob = Instance { 0 };
 static auto lastWaitHackTime = std::chrono::steady_clock::now();
 
 Instance FarmBot::getAttackableMob(float distance, MobType targetTypes) {
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     if (!mainActor.IsValid()) {
         return Instance(0);
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
-    auto mobList = Helper::getMobList(targetTypes);
+    auto mobList = InstanceHelper::getMobList(targetTypes);
 
     if (mobList.empty()) {
         return Instance(0);
@@ -47,13 +47,13 @@ Instance FarmBot::getAttackableMob(float distance, MobType targetTypes) {
 
 void FarmBot::WaitHack(MobType targetTypes) {
     const float distance = 8.0f;
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
-    auto mobList = Helper::getMobList(targetTypes);
+    auto mobList = InstanceHelper::getMobList(targetTypes);
 
     if (mobList.empty()) {
         return;
@@ -77,13 +77,13 @@ void FarmBot::WaitHack(MobType targetTypes) {
 }
 
 void FarmBot::RangeDamage(MobType targetTypes, float distance) {
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
-    auto mobList = Helper::getMobList(targetTypes);
+    auto mobList = InstanceHelper::getMobList(targetTypes);
 
     if (mobList.empty()) {
         return;
@@ -156,7 +156,7 @@ void FarmBot::Loop() {
         return;
     }
 
-    if (!Helper::GetMainActor().IsValid()) {
+    if (!InstanceHelper::GetMainActor().IsValid()) {
         return;
     }
 

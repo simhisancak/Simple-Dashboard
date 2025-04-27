@@ -74,14 +74,14 @@ void ClientApp::UpdateMemoryState() {
     m_MemoryState.ModuleSize = oldModuleSize;
     m_MemoryState.hproc = oldHandle;
 
-    auto mobs = Helper::getMobs(MobType::All);
+    auto mobs = InstanceHelper::getMobs(MobType::All);
     m_MemoryState.MobListSize = std::min<size_t>(mobs.size(), Packets::MAX_MOB_LIST_SIZE);
 
     for (size_t i = 0; i < m_MemoryState.MobListSize; i++) {
         m_MemoryState.MobList[i] = mobs[i];
     }
 
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     Packets::Instance instance;
     instance.VID = mainActor.GetVID();
     strcpy(instance.Name, mainActor.GetName().c_str());
@@ -94,7 +94,7 @@ Packets::ItemDumpState ClientApp::GetItemDumpState(const std::string& filter) {
     Packets::ItemDumpState itemDumpState;
     itemDumpState.ItemListSize = 0;
 
-    auto itemDumps = Helper::GetItemList();
+    auto itemDumps = ItemHelper::getItemList();
     size_t addedItems = 0;
 
     for (const auto& item : itemDumps) {

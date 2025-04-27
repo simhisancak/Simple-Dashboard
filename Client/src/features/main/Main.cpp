@@ -24,13 +24,13 @@ const float Main::angleStep = (15.0f * 3.14159f) / 180.0f;
 
 void Main::WaitHack() {
     const float distance = 8.0f;
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
-    auto mobList = Helper::getMobList(m_settings.TargetTypes);
+    auto mobList = InstanceHelper::getMobList(m_settings.TargetTypes);
 
     if (mobList.empty()) {
         return;
@@ -97,13 +97,13 @@ void Main::RangeDamage() {
     if (m_settings.AreaSize <= 2) {
         return;
     }
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
-    auto mobList = Helper::getMobList(m_settings.TargetTypes);
+    auto mobList = InstanceHelper::getMobList(m_settings.TargetTypes);
 
     if (mobList.empty()) {
         return;
@@ -133,13 +133,13 @@ void Main::RangeDamageSafe() {
     if (m_settings.AreaSize <= 2) {
         return;
     }
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
-    auto mobList = Helper::getMobList(m_settings.TargetTypes);
+    auto mobList = InstanceHelper::getMobList(m_settings.TargetTypes);
 
     if (mobList.empty()) {
         return;
@@ -219,14 +219,14 @@ std::vector<GroundItem> Main::FilterGroundItems(const std::vector<GroundItem>& g
 }
 
 void Main::PickupGroundItems() {
-    auto mainActor = Helper::GetMainActor();
+    auto mainActor = InstanceHelper::GetMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
     auto mainActorPos = mainActor.GetPixelPosition();
 
-    auto groundItemList = Helper::getGroundItemList();
+    auto groundItemList = GroundItemHelper::getGroundItemList();
 
     if (groundItemList.empty()) {
         return;
@@ -264,7 +264,7 @@ void Main::Loop() {
         Helper::ClearRam();
     }
 
-    auto mainCharacter = Helper::GetMainActor();
+    auto mainCharacter = InstanceHelper::GetMainActor();
     if (!mainCharacter.IsValid()) {
         return;
     }

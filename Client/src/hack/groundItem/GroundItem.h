@@ -3,8 +3,11 @@
 #include "common/Memory.hpp"
 #include "../globals/Globals.h"
 #include <string>
+#include <map>
 
 namespace FracqClient {
+
+typedef std::map<uint32_t, uintptr_t> GroundItemMap;
 
 class GroundItem {
 private:
@@ -27,6 +30,12 @@ public:
         return GroundItem(address, VID);
     }
     Math::Vector3 GetPixelPosition() const;
+};
+
+class GroundItemHelper {
+public:
+    static GroundItemMap getGroundItemMap();
+    static std::vector<GroundItem> getGroundItemList();
 };
 
 } // namespace FracqClient

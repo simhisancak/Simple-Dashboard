@@ -6,6 +6,8 @@
 
 namespace FracqClient {
 
+bool CustomGameFunctions::m_boost = false;
+
 void CustomGameFunctions::setAttackVid(uint32_t vid) {
     Common::Memory::Write<uint32_t>(Globals::Get()->PythonPlayer
                                         + Globals::Get()->SetAttackVidOffset,
@@ -25,10 +27,29 @@ uint32_t CustomGameFunctions::getTargetVid() {
                                           + Globals::Get()->TargetVidOffset);
 }
 
-void CustomGameFunctions::MoveTo(const Math::Vector3& fromPos, const Math::Vector3& toPos) {
-    auto points = Helper::DivideTwoPointsByDistance(5, fromPos, toPos);
+void CustomGameFunctions::MoveTo(const Math::Vector3& fromPos,
+                                 const Math::Vector3& toPos,
+                                 float rotation) {
+
+    if (fromPos.DistanceTo(toPos) < 5) {
+        SendMovementPacket(toPos, rotation);
+        return;
+    }
+
+    auto points = Helper::DivideTwoPointsByDistance(6, fromPos, toPos);
     for (auto& point : points) {
-        GameFunctions::SendCharacterStatePacket(point, 0, 0, 0);
+        SendMovementPacket(point, rotation);
+    }
+}
+
+void CustomGameFunctions::SendMovementPacket(const Math::Vector3& position, float rotation) {
+    // Boost durumuna göre farklı paket gönder
+    if (m_boost) {
+        GameFunctions::SendCharacterStatePacket(position, rotation, 1, 0);
+        m_boost = false;
+    } else {
+        GameFunctions::SendCharacterStatePacket(position, rotation, 0, 0);
+        m_boost = true;
     }
 }
 

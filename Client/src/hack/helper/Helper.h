@@ -37,6 +37,21 @@ public:
 
     static Math::Vector3
     ClampDistance(const Math::Vector3& origin, const Math::Vector3& target, float maxDistance);
+
+    static float CalculateRotation(const Math::Vector3& from, const Math::Vector3& to) {
+        Math::Vector3 direction = to - from;
+        float angle = atan2f(direction.x, direction.y);
+
+        // Radyanı dereceye çevir (180/π ≈ 57.2958)
+        angle = angle * 57.2958f;
+
+        // Negatif açıları 0-360 aralığına çevir
+        if (angle < 0) {
+            angle += 360.0f;
+        }
+
+        return angle;
+    }
 };
 
 } // namespace FracqClient

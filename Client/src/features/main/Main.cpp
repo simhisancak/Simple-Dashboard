@@ -273,19 +273,24 @@ void Main::MoveSpeedHack() {
     mainActor.setPixelPosition(newPosition);
 
     /*if (m_mainActorPosLast.DistanceTo(mainActorPos) < radius + safeDistance) {
-        CustomGameFunctions::MoveTo(m_mainActorPosLast, newPosition);
-        m_mainActorPosLast = newPosition;
+
+        Math::Vector3 newPosition = {
+            m_mainActorPosLast.x
+                + (static_cast<float>(m_settings.MoveSpeed) / 100.0f) * sinf(rotation * 0.017453f),
+            m_mainActorPosLast.y
+                + (static_cast<float>(m_settings.MoveSpeed) / 100.0f) * cosf(rotation * 0.017453f),
+            m_mainActorPosLast.z
+        };
     }*/
 
-    Sleep(1);
-
-    if (m_boost) {
-        m_boost = false;
-        GameFunctions::SendCharacterStatePacket(newPosition, rotation, 1, 0);
-    } else {
-        GameFunctions::SendCharacterStatePacket(newPosition, rotation, 0, 0);
-        m_boost = true;
+    if (m_mainActorPosLast.DistanceTo(mainActorPos) < radius + safeDistance) {
+        CustomGameFunctions::MoveTo(m_mainActorPosLast,
+                                    newPosition,
+                                    Helper::CalculateRotation(m_mainActorPosLast, newPosition));
+        return;
     }
+
+    CustomGameFunctions::MoveTo(mainActorPos, newPosition, rotation);
 }
 
 void Main::Loop() {
@@ -336,13 +341,6 @@ void Main::Loop() {
             default:
                 break;
             }
-
-            auto end_time = std::chrono::steady_clock::now();
-
-            auto _elapsedTime = end_time - start_time;
-
-            LOG_ERROR(LOG_COMPONENT_FARMBOT,
-                      "Damage time: " << static_cast<float>(_elapsedTime.count()) / 1000000.0f);
         }
     }
 

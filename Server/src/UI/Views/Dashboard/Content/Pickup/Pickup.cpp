@@ -78,7 +78,7 @@ namespace UI {
                     ImGui::SameLine(checkboxWidth);
                     ImGui::SetNextItemWidth(100.0f);
                     float areaValue = settings.AreaSize;
-                    if (ImGui::DragFloat("Area Size", &areaValue, 0.1f, 6.0f, 100.0f, "%.1f")) {
+                    if (ImGui::DragFloat("Area", &areaValue, 0.5f, 6.0f, 100.0f, "%.1f")) {
                         areaValue = std::clamp(areaValue, 6.0f, 100.0f);
                         settings.AreaSize = std::clamp(areaValue, 6.0f, 100.0f);
                     }

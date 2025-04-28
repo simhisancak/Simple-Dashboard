@@ -5,7 +5,7 @@
 namespace FracqClient {
 
 namespace {
-    __declspec(noinline) const char* GetNameFromAsm(uintptr_t address, uintptr_t getnamecall) {
+    __declspec(noinline) const char* getNameFromAsm(uintptr_t address, uintptr_t getnamecall) {
         const char* name = "";
         __asm {
             mov ecx, address
@@ -15,10 +15,10 @@ namespace {
         return name;
     }
 
-    const char* GetNameInternal(uintptr_t address, uintptr_t getnamecall) {
+    const char* getNameInternal(uintptr_t address, uintptr_t getnamecall) {
         const char* name = "";
         try {
-            name = GetNameFromAsm(address, getnamecall);
+            name = getNameFromAsm(address, getnamecall);
         } catch (...) {
             return "";
         }
@@ -26,8 +26,8 @@ namespace {
     }
 }
 
-uint32_t Instance::GetVID() const {
-    if (m_Address < 0x1000) {
+uint32_t Instance::getVID() const {
+    if (m_Address < 0x10000) {
         return 0;
     }
 
@@ -35,7 +35,7 @@ uint32_t Instance::GetVID() const {
     return vid > 100 ? vid : 0;
 }
 
-Math::Vector3 Instance::GetPixelPosition() const {
+Math::Vector3 Instance::getPixelPosition() const {
     if (!IsValid()) {
         return Math::Vector3();
     }
@@ -44,8 +44,16 @@ Math::Vector3 Instance::GetPixelPosition() const {
         abs(Common::Memory::Read<float>(m_Address + Globals::Get()->PosYOffset) / 100.0f),
         0);
 }
+void Instance::setPixelPosition(Math::Vector3 position) const {
+    if (!IsValid()) {
+        return;
+    }
+    Common::Memory::Write<float>(m_Address + Globals::Get()->PosXOffset, position.x * 100.0f);
+    Common::Memory::Write<float>(m_Address + Globals::Get()->PosYOffset,
+                                 -1 * (position.y * 100.0f));
+}
 
-uint8_t Instance::GetType() const {
+uint8_t Instance::getType() const {
     if (!IsValid()) {
         return 0;
     }
@@ -59,14 +67,35 @@ bool Instance::IsDead() const {
     return Common::Memory::Read<bool>(m_Address + Globals::Get()->IsDeadOffset);
 }
 
-std::string Instance::GetName() const {
+std::string Instance::getName() const {
     if (!IsValid()) {
         return "";
     }
 
     uintptr_t getnamecall = Globals::Get()->GetNameString;
-    const char* name = GetNameInternal(m_Address, getnamecall);
+    const char* name = getNameInternal(m_Address, getnamecall);
     return Common::Helper::ConvertToUTF8(name);
+}
+
+uint32_t Instance::getRaceMotionData() const {
+    if (!IsValid()) {
+        return 0;
+    }
+    return Common::Memory::Read<uint32_t>(m_Address + Globals::Get()->RaceMotionDataPtrOffset);
+}
+
+uint32_t Instance::getMotionType() const {
+    if (!IsValid()) {
+        return 0;
+    }
+    return Common::Memory::Read<uint32_t>(getRaceMotionData() + 0x4);
+}
+
+float Instance::getRotation() const {
+    if (!IsValid()) {
+        return 0.0f;
+    }
+    return Common::Memory::Read<float>(m_Address + Globals::Get()->RotationOffset);
 }
 
 } // namespace FracqClient

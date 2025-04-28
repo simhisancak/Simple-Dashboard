@@ -81,12 +81,12 @@ void ClientApp::UpdateMemoryState() {
         m_MemoryState.MobList[i] = mobs[i];
     }
 
-    auto mainActor = InstanceHelper::GetMainActor();
+    auto mainActor = InstanceHelper::getMainActor();
     Packets::Instance instance;
-    instance.VID = mainActor.GetVID();
-    strcpy(instance.Name, mainActor.GetName().c_str());
-    instance.Position = mainActor.GetPixelPosition();
-    instance.Type = mainActor.GetType();
+    instance.VID = mainActor.getVID();
+    strcpy(instance.Name, mainActor.getName().c_str());
+    instance.Position = mainActor.getPixelPosition();
+    instance.Type = mainActor.getType();
     m_MemoryState.MainActor = instance;
 }
 
@@ -98,11 +98,11 @@ Packets::ItemDumpState ClientApp::GetItemDumpState(const std::string& filter) {
     size_t addedItems = 0;
 
     for (const auto& item : itemDumps) {
-        std::string itemName = item.GetName();
+        std::string itemName = item.getName();
 
         if (filter.empty() || Common::Helper::ContainsCaseInsensitive(itemName, filter)) {
             if (addedItems < Packets::MAX_ITEM_LIST_SIZE) {
-                itemDumpState.ItemList[addedItems].Vnum = item.GetVnum();
+                itemDumpState.ItemList[addedItems].Vnum = item.getVnum();
                 strcpy(itemDumpState.ItemList[addedItems].Name, itemName.c_str());
                 addedItems++;
             }

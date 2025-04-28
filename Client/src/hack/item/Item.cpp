@@ -5,7 +5,7 @@
 namespace FracqClient {
 
 namespace {
-    __declspec(noinline) const char* GetNameInternal(uintptr_t address, size_t offset) {
+    __declspec(noinline) const char* getNameInternal(uintptr_t address, size_t offset) {
         const char* name = "";
         __try {
             name = reinterpret_cast<const char*>(address + offset);
@@ -16,15 +16,15 @@ namespace {
     }
 }
 
-std::string Item::GetName() const {
-    if (m_Address < 0x1000) {
+std::string Item::getName() const {
+    if (m_Address < 0x10000) {
         return "";
     }
-    const char* name = GetNameInternal(m_Address, Globals::Get()->ItemNameOffset);
+    const char* name = getNameInternal(m_Address, Globals::Get()->ItemNameOffset);
     return Common::Helper::ConvertToUTF8(name);
 }
 
-uint32_t Item::GetVnum() const {
+uint32_t Item::getVnum() const {
     if (!IsValid()) {
         return 0;
     }

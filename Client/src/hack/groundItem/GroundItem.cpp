@@ -5,7 +5,7 @@
 namespace FracqClient {
 
 namespace {
-    __declspec(noinline) const char* GetOwnershipInternal(uintptr_t address, size_t offset) {
+    __declspec(noinline) const char* getOwnershipInternal(uintptr_t address, size_t offset) {
         const char* ownership = "";
         __try {
             ownership = reinterpret_cast<const char*>(address + offset);
@@ -16,17 +16,17 @@ namespace {
     }
 }
 
-std::string GroundItem::GetOwnership() const {
+std::string GroundItem::getOwnership() const {
     if (!IsValid()) {
         return "";
     }
 
-    const char* ownership = GetOwnershipInternal(m_Address,
+    const char* ownership = getOwnershipInternal(m_Address,
                                                  Globals::Get()->GroundItemOwnershipOffset);
     return Common::Helper::ConvertToUTF8(ownership);
 }
 
-Math::Vector3 GroundItem::GetPixelPosition() const {
+Math::Vector3 GroundItem::getPixelPosition() const {
     if (!IsValid()) {
         return Math::Vector3();
     }
@@ -37,7 +37,7 @@ Math::Vector3 GroundItem::GetPixelPosition() const {
         0);
 }
 
-uint32_t GroundItem::GetVnum() const {
+uint32_t GroundItem::getVnum() const {
     if (!IsValid()) {
         return 0;
     }

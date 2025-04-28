@@ -19,8 +19,6 @@ public:
 
 private:
     static Instance getAttackableMob(float distance, MobType targetTypes);
-    static void WaitHack(MobType targetTypes);
-    static void RangeDamage(MobType targetTypes, float distance);
 
     static bool m_FixedRange;
     static Math::Vector3 m_FixedRangePos;

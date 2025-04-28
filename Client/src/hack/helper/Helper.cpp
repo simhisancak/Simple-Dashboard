@@ -4,13 +4,15 @@
 
 #include "../globals/Globals.h"
 #include "common/Helper.h"
+#include "hack/gameFunctions/GameFunctions.h"
+
 namespace FracqClient {
 
 bool Helper::CompareInstances(const Instance& a, const Instance& b) {
-    auto posA = a.GetPixelPosition();
-    auto posB = b.GetPixelPosition();
-    auto mainActor = InstanceHelper::GetMainActor();
-    auto mainPos = mainActor.GetPixelPosition();
+    auto posA = a.getPixelPosition();
+    auto posB = b.getPixelPosition();
+    auto mainActor = InstanceHelper::getMainActor();
+    auto mainPos = mainActor.getPixelPosition();
 
     return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
 }
@@ -18,38 +20,19 @@ bool Helper::CompareInstances(const Instance& a, const Instance& b) {
 bool Helper::ComparePacketsInstances(const Packets::Instance& a, const Packets::Instance& b) {
     auto posA = a.Position;
     auto posB = b.Position;
-    auto mainActor = InstanceHelper::GetMainActor();
-    auto mainPos = mainActor.GetPixelPosition();
+    auto mainActor = InstanceHelper::getMainActor();
+    auto mainPos = mainActor.getPixelPosition();
 
     return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
 }
 
 bool Helper::CompareGroundItems(const GroundItem& a, const GroundItem& b) {
-    auto posA = a.GetPixelPosition();
-    auto posB = b.GetPixelPosition();
-    auto mainActor = InstanceHelper::GetMainActor();
-    auto mainPos = mainActor.GetPixelPosition();
+    auto posA = a.getPixelPosition();
+    auto posB = b.getPixelPosition();
+    auto mainActor = InstanceHelper::getMainActor();
+    auto mainPos = mainActor.getPixelPosition();
 
     return mainPos.DistanceTo(posA) < mainPos.DistanceTo(posB);
-}
-
-void Helper::setAttackVid(uint32_t vid) {
-    Common::Memory::Write<uint32_t>(Globals::Get()->PythonPlayer
-                                        + Globals::Get()->SetAttackVidOffset,
-                                    vid);
-}
-
-void Helper::setAttackState(bool state) {
-    uint32_t _state = state ? 3 : 0;
-
-    Common::Memory::Write<uint32_t>(Globals::Get()->PythonPlayer
-                                        + Globals::Get()->SetAttackStateOffset,
-                                    _state);
-}
-
-uint32_t Helper::getTargetVid() {
-    return Common::Memory::Read<uint32_t>(Globals::Get()->PythonPlayer
-                                          + Globals::Get()->TargetVidOffset);
 }
 
 void Helper::RenderCondition(bool enable) {
@@ -105,80 +88,16 @@ std::vector<Math::Vector3> Helper::DivideTwoPointsByDistance(float distance,
     return points;
 }
 
-void Helper::SendAttackPacket(uint32_t vid) {
-    uintptr_t netptr = Globals::Get()->PythonNetworkStream;
-    uintptr_t attackcall = Globals::Get()->SendAttackPacket;
-
-    __try {
-        __asm {
-            mov ecx, netptr
-            push vid
-            push 0
-            call attackcall
-        }
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        // Handle exception silently
-    }
-}
-
-void Helper::SendCharacterStatePacket(Math::Vector3* pos,
-                                      float rot,
-                                      uint32_t eFunc,
-                                      uint32_t uArg) {
-    uintptr_t sendstatecall = Globals::Get()->SendCharacterStatePacket;
-    uintptr_t netptr = Globals::Get()->PythonNetworkStream;
-    Math::Vector3 _pos = *pos;
-    _pos.x = _pos.x * 100.0f;
-    _pos.y = _pos.y * 100.0f;
-
-    __try {
-        __asm {
-            mov ecx, netptr
-            push uArg
-            push eFunc
-            push rot
-            lea eax, _pos
-            push eax
-            call sendstatecall
-        }
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        // Handle exception silently
-    }
-}
-
-void Helper::SendClickItemPacket(uint32_t vid) {
-    uintptr_t pythonplayer = Globals::Get()->PythonPlayer;
-    uintptr_t clickitemcall = Globals::Get()->SendClickItemPacket;
-
-    __try {
-        __asm {
-            mov ecx, pythonplayer
-            push vid
-            call clickitemcall
-        }
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        // Handle exception silently
-    }
-}
-
-void Helper::MoveTo(const Math::Vector3& fromPos, const Math::Vector3& toPos) {
-    auto points = DivideTwoPointsByDistance(2, fromPos, toPos);
-    for (auto& point : points) {
-        SendCharacterStatePacket(&point, 0, 0, 0);
-        Sleep(3);
-    }
-}
-
-std::vector<Instance> Helper::FilterByAreaSize(const std::vector<Instance>& mobList,
-                                               const Math::Vector3& mainActorPos,
-                                               float areaSize) {
-    std::vector<Instance> filtered;
-    for (const auto& mob : mobList) {
-        if (mainActorPos.DistanceTo(mob.GetPixelPosition()) <= areaSize) {
-            filtered.push_back(mob);
-        }
-    }
-    return filtered;
+void Helper::FilterByAreaSize(std::vector<Instance>& mobList,
+                              const Math::Vector3& mainActorPos,
+                              float areaSize) {
+    mobList.erase(std::remove_if(mobList.begin(),
+                                 mobList.end(),
+                                 [&mainActorPos, areaSize](const Instance& mob) {
+                                     return mainActorPos.DistanceTo(mob.getPixelPosition())
+                                            > areaSize;
+                                 }),
+                  mobList.end());
 }
 
 Math::Vector3
@@ -206,7 +125,7 @@ bool Helper::IsMobNearPosition(const Math::Vector3& position,
                                const std::vector<Instance>& mobList,
                                float threshold) {
     for (const auto& mob : mobList) {
-        if (position.DistanceTo(mob.GetPixelPosition()) < threshold) {
+        if (position.DistanceTo(mob.getPixelPosition()) < threshold) {
             return true;
         }
     }

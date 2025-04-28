@@ -3,7 +3,7 @@
 
 namespace Packets {
 
-enum class DamageType : uint8_t { WaitHack, RangeDamage, RangeDamageSafe };
+enum class DamageType : uint8_t { WaitDamage, RangeDamage, RangeDamageSafe };
 
 struct MainState {
     float AreaSize;
@@ -12,9 +12,10 @@ struct MainState {
     bool ClearRam;
     bool DamageEnabled;
     bool Pickup;
+    bool MoveSpeedEnabled;
+    int MoveSpeed;
     DamageType DamageType;
     uint32_t DamageDelay;
-    uint32_t DamageCount;
     uint32_t DamageLimit;
 
     MainState()
@@ -24,9 +25,10 @@ struct MainState {
         , ClearRam(false)
         , DamageEnabled(false)
         , Pickup(false)
-        , DamageType(DamageType::WaitHack)
+        , MoveSpeedEnabled(false)
+        , MoveSpeed(40)
+        , DamageType(DamageType::WaitDamage)
         , DamageDelay(200)
-        , DamageCount(1)
         , DamageLimit(10) { }
 };
 } // namespace Packets

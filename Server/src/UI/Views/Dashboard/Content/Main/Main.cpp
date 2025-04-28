@@ -51,19 +51,19 @@ namespace UI {
                 ImGui::BeginDisabled(!settings.DamageEnabled);
 
                 ImGui::SameLine(radioStartX);
-                if (ImGui::RadioButton("WaitHack",
-                                       settings.DamageType == Packets::DamageType::WaitHack)) {
-                    settings.DamageType = Packets::DamageType::WaitHack;
+                if (ImGui::RadioButton("wDamage",
+                                       settings.DamageType == Packets::DamageType::WaitDamage)) {
+                    settings.DamageType = Packets::DamageType::WaitDamage;
                 }
 
                 ImGui::SameLine(radioStartX + 120.0f);
-                if (ImGui::RadioButton("Range Damage",
+                if (ImGui::RadioButton("rDamage",
                                        settings.DamageType == Packets::DamageType::RangeDamage)) {
                     settings.DamageType = Packets::DamageType::RangeDamage;
                 }
 
                 ImGui::SameLine(radioStartX + 270.0f);
-                if (ImGui::RadioButton("Range Damage Safe",
+                if (ImGui::RadioButton("rDamageSafe",
                                        settings.DamageType
                                            == Packets::DamageType::RangeDamageSafe)) {
                     settings.DamageType = Packets::DamageType::RangeDamageSafe;
@@ -79,21 +79,13 @@ namespace UI {
 
                 ImGui::SameLine(radioStartX);
                 ImGui::SetNextItemWidth(inputWidth);
-                int countValue = static_cast<int>(settings.DamageCount);
-                if (ImGui::DragInt("Count", &countValue, 1, 1, 10)) {
-                    countValue = std::clamp(countValue, 1, 10);
-                    settings.DamageCount = static_cast<uint32_t>(countValue);
-                }
-
-                ImGui::SameLine(radioStartX + 120.0f);
-                ImGui::SetNextItemWidth(inputWidth);
                 float areaValue = settings.AreaSize;
-                if (ImGui::DragFloat("Area", &areaValue, 0.1f, 6.0f, 100.0f, "%.1f")) {
+                if (ImGui::DragFloat("Area", &areaValue, 0.5f, 6.0f, 100.0f, "%.1f")) {
                     areaValue = std::clamp(areaValue, 6.0f, 100.0f);
                     settings.AreaSize = std::clamp(areaValue, 6.0f, 100.0f);
                 }
 
-                ImGui::SameLine(radioStartX + 270.0f);
+                ImGui::SameLine(radioStartX + 120.0f);
                 ImGui::SetNextItemWidth(inputWidth);
                 int damageLimit = static_cast<int>(settings.DamageLimit);
                 if (ImGui::DragInt("Limit", &damageLimit, 1, 1, 20)) {
@@ -121,6 +113,26 @@ namespace UI {
                                                      & ~static_cast<uint8_t>(MOB_TYPES[1].type));
                 }
 
+                ImGui::EndDisabled();
+                ImGui::EndGroup();
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            {
+                ImGui::BeginGroup();
+                ImGui::AlignTextToFramePadding();
+                ImGui::Checkbox("Enable Move Speed", &settings.MoveSpeedEnabled);
+
+                ImGui::BeginDisabled(!settings.MoveSpeedEnabled);
+                ImGui::SameLine(radioStartX);
+                ImGui::SetNextItemWidth(inputWidth);
+                int moveSpeedValue = settings.MoveSpeed;
+                if (ImGui::DragInt("Speed", &moveSpeedValue, 1, 20, 100)) {
+                    moveSpeedValue = std::clamp(moveSpeedValue, 20, 100);
+                    settings.MoveSpeed = moveSpeedValue;
+                }
                 ImGui::EndDisabled();
                 ImGui::EndGroup();
             }

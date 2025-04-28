@@ -9,47 +9,49 @@
 #include "hack/instance/Instance.h"
 #include "hack/item/Item.h"
 #include "hack/groundItem/GroundItem.h"
-
+#include "hack/gameFunctions/GameFunctions.h"
+#include "hack/customGameFunctions/CustomGameFunctions.h"
 namespace FracqClient {
 Packets::MainState Main::m_settings;
 Packets::PickupState Main::m_pickupSettings;
 float Main::m_angle = 0.0f;
+bool Main::m_boost = false;
 Math::Vector3 Main::m_mainActorPosLast;
 
-static auto lastWaitHackTime = std::chrono::steady_clock::now();
+static auto lastDamageTime = std::chrono::steady_clock::now();
 static auto lastPickupTime = std::chrono::steady_clock::now();
 const float Main::safeDistance = 2.0f;
 const float Main::radius = (m_settings.AreaSize * 0.6f) + safeDistance;
 const float Main::angleStep = (15.0f * 3.14159f) / 180.0f;
 
-void Main::WaitHack() {
+void Main::WaitDamage() {
     const float distance = 8.0f;
-    auto mainActor = InstanceHelper::GetMainActor();
+    auto mainActor = InstanceHelper::getMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
-    auto mainActorPos = mainActor.GetPixelPosition();
     auto mobList = InstanceHelper::getMobList(m_settings.TargetTypes);
 
     if (mobList.empty()) {
         return;
     }
 
-    if (mobList.size() > 1) {
-        mobList = Helper::FilterByAreaSize(mobList, mainActorPos, distance);
+    Helper::FilterByAreaSize(mobList, mainActor.getPixelPosition(), distance);
+
+    if (mobList.empty()) {
+        return;
     }
 
     uint32_t count = 0;
 
     for (const auto& mob : mobList) {
-        auto mobPos = mob.GetPixelPosition();
-        float mobDistance = mainActorPos.DistanceTo(mobPos);
+        auto mobPos = mob.getPixelPosition();
+        float mobDistance = mainActor.getPixelPosition().DistanceTo(mobPos);
 
         if (count < m_settings.DamageLimit) {
             count++;
-            Helper::SendAttackPacket(mob.GetVID());
-            Sleep(20);
+            GameFunctions::SendAttackPacket(mob.getVID());
         }
     }
 }
@@ -94,84 +96,80 @@ Math::Vector3 Main::FindSafePosition(const Math::Vector3& mainActorPos,
 }
 
 void Main::RangeDamage() {
-    if (m_settings.AreaSize <= 2) {
-        return;
-    }
-    auto mainActor = InstanceHelper::GetMainActor();
+    auto mainActor = InstanceHelper::getMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
-    auto mainActorPos = mainActor.GetPixelPosition();
     auto mobList = InstanceHelper::getMobList(m_settings.TargetTypes);
 
     if (mobList.empty()) {
         return;
     }
-    mobList = Helper::FilterByAreaSize(mobList, mainActorPos, m_settings.AreaSize);
+    Helper::FilterByAreaSize(mobList, mainActor.getPixelPosition(), m_settings.AreaSize);
+
+    if (mobList.empty()) {
+        return;
+    }
 
     uint32_t count = 0;
 
     for (const auto& mob : mobList) {
-        auto mobPos = mob.GetPixelPosition();
-        float mobDistance = mainActorPos.DistanceTo(mobPos);
+        auto mobPos = mob.getPixelPosition();
+        float mobDistance = mainActor.getPixelPosition().DistanceTo(mobPos);
 
         if (count++ > m_settings.DamageLimit) {
             break;
         }
 
-        Helper::MoveTo(mainActorPos, mobPos);
-        Helper::SendAttackPacket(mob.GetVID());
+        CustomGameFunctions::MoveTo(mainActor.getPixelPosition(), mobPos);
+        GameFunctions::SendAttackPacket(mob.getVID());
 
-        Helper::MoveTo(mobPos, mainActorPos);
-
-        Sleep(20);
+        CustomGameFunctions::MoveTo(mobPos, mainActor.getPixelPosition());
     }
 }
 
 void Main::RangeDamageSafe() {
-    if (m_settings.AreaSize <= 2) {
-        return;
-    }
-    auto mainActor = InstanceHelper::GetMainActor();
+    auto mainActor = InstanceHelper::getMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
-    auto mainActorPos = mainActor.GetPixelPosition();
     auto mobList = InstanceHelper::getMobList(m_settings.TargetTypes);
 
     if (mobList.empty()) {
         return;
     }
 
-    mobList = Helper::FilterByAreaSize(mobList, mainActorPos, m_settings.AreaSize);
+    Helper::FilterByAreaSize(mobList, mainActor.getPixelPosition(), m_settings.AreaSize);
+
+    if (mobList.empty()) {
+        return;
+    }
 
     uint32_t count = 0;
 
-    if (m_mainActorPosLast.DistanceTo(mainActorPos) > radius + safeDistance) {
-        m_mainActorPosLast = mainActorPos;
+    if (m_mainActorPosLast.DistanceTo(mainActor.getPixelPosition()) > radius + safeDistance) {
+        m_mainActorPosLast = mainActor.getPixelPosition();
         m_angle = 0.0f;
     }
 
     for (const auto& mob : mobList) {
-        auto mobPos = mob.GetPixelPosition();
-        float mobDistance = mainActorPos.DistanceTo(mobPos);
+        auto mobPos = mob.getPixelPosition();
+        float mobDistance = mainActor.getPixelPosition().DistanceTo(mobPos);
 
         if (count++ > m_settings.DamageLimit) {
             break;
         }
 
-        Helper::MoveTo(mainActorPos, mobPos);
-        Helper::SendAttackPacket(mob.GetVID());
+        CustomGameFunctions::MoveTo(m_mainActorPosLast, mobPos);
+        GameFunctions::SendAttackPacket(mob.getVID());
 
         Math::Vector3 nextCircularPos
-            = FindSafePosition(mainActorPos, radius, m_angle, angleStep, mobList);
-        Helper::MoveTo(mobPos, nextCircularPos);
+            = FindSafePosition(mainActor.getPixelPosition(), radius, m_angle, angleStep, mobList);
+        CustomGameFunctions::MoveTo(mobPos, nextCircularPos);
         m_mainActorPosLast = nextCircularPos;
         m_angle += angleStep;
-
-        Sleep(20);
     }
 }
 
@@ -180,7 +178,7 @@ std::vector<GroundItem> Main::FilterGroundItems(const std::vector<GroundItem>& g
     std::vector<GroundItem> filtered;
 
     for (auto& groundItem : groundItemList) {
-        auto groundItemPos = groundItem.GetPixelPosition();
+        auto groundItemPos = groundItem.getPixelPosition();
 
         if (mainActorPos.DistanceTo(groundItemPos) >= m_pickupSettings.AreaSize) {
             continue;
@@ -192,7 +190,7 @@ std::vector<GroundItem> Main::FilterGroundItems(const std::vector<GroundItem>& g
 
         if (!m_pickupSettings.IncludeAll) {
             bool isItemInList = false;
-            uint32_t vnum = groundItem.GetVnum();
+            uint32_t vnum = groundItem.getVnum();
 
             for (size_t i = 0; i < m_pickupSettings.ItemListSize; i++) {
                 if (m_pickupSettings.ItemList[i].Vnum == vnum) {
@@ -219,12 +217,12 @@ std::vector<GroundItem> Main::FilterGroundItems(const std::vector<GroundItem>& g
 }
 
 void Main::PickupGroundItems() {
-    auto mainActor = InstanceHelper::GetMainActor();
+    auto mainActor = InstanceHelper::getMainActor();
     if (!mainActor.IsValid()) {
         return;
     }
 
-    auto mainActorPos = mainActor.GetPixelPosition();
+    auto mainActorPos = mainActor.getPixelPosition();
 
     auto groundItemList = GroundItemHelper::getGroundItemList();
 
@@ -242,11 +240,52 @@ void Main::PickupGroundItems() {
         return;
     }
 
-    Helper::MoveTo(mainActorPos, filteredGroundItemList[0].GetPixelPosition());
+    CustomGameFunctions::MoveTo(mainActorPos, filteredGroundItemList[0].getPixelPosition());
 
-    Helper::SendClickItemPacket(filteredGroundItemList[0].GetVID());
+    GameFunctions::SendClickItemPacket(filteredGroundItemList[0].getVID());
 
-    Helper::MoveTo(filteredGroundItemList[0].GetPixelPosition(), mainActorPos);
+    CustomGameFunctions::MoveTo(filteredGroundItemList[0].getPixelPosition(), mainActorPos);
+}
+
+void Main::MoveSpeedHack() {
+    auto mainActor = InstanceHelper::getMainActor();
+
+    if (!mainActor.IsValid()) {
+        return;
+    }
+
+    Math::Vector3 mainActorPos = mainActor.getPixelPosition();
+
+    if (mainActor.getMotionType() != 2) {
+        return;
+    }
+
+    float rotation = mainActor.getRotation();
+
+    Math::Vector3 newPosition = {
+        mainActorPos.x
+            + (static_cast<float>(m_settings.MoveSpeed) / 100.0f) * sinf(rotation * 0.017453f),
+        mainActorPos.y
+            + (static_cast<float>(m_settings.MoveSpeed) / 100.0f) * cosf(rotation * 0.017453f),
+        mainActorPos.z
+    };
+
+    mainActor.setPixelPosition(newPosition);
+
+    /*if (m_mainActorPosLast.DistanceTo(mainActorPos) < radius + safeDistance) {
+        CustomGameFunctions::MoveTo(m_mainActorPosLast, newPosition);
+        m_mainActorPosLast = newPosition;
+    }*/
+
+    Sleep(1);
+
+    if (m_boost) {
+        m_boost = false;
+        GameFunctions::SendCharacterStatePacket(newPosition, rotation, 1, 0);
+    } else {
+        GameFunctions::SendCharacterStatePacket(newPosition, rotation, 0, 0);
+        m_boost = true;
+    }
 }
 
 void Main::Loop() {
@@ -264,7 +303,7 @@ void Main::Loop() {
         Helper::ClearRam();
     }
 
-    auto mainCharacter = InstanceHelper::GetMainActor();
+    auto mainCharacter = InstanceHelper::getMainActor();
     if (!mainCharacter.IsValid()) {
         return;
     }
@@ -276,15 +315,17 @@ void Main::Loop() {
     if (m_settings.DamageEnabled) {
 
         auto currentTime = std::chrono::steady_clock::now();
-        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-            currentTime - lastWaitHackTime);
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime
+                                                                                 - lastDamageTime);
 
         if (elapsedTime.count() >= m_settings.DamageDelay) {
-            lastWaitHackTime = currentTime;
+            lastDamageTime = currentTime;
+
+            auto start_time = std::chrono::steady_clock::now();
 
             switch (m_settings.DamageType) {
-            case Packets::DamageType::WaitHack:
-                WaitHack();
+            case Packets::DamageType::WaitDamage:
+                WaitDamage();
                 break;
             case Packets::DamageType::RangeDamage:
                 RangeDamage();
@@ -295,6 +336,13 @@ void Main::Loop() {
             default:
                 break;
             }
+
+            auto end_time = std::chrono::steady_clock::now();
+
+            auto _elapsedTime = end_time - start_time;
+
+            LOG_ERROR(LOG_COMPONENT_FARMBOT,
+                      "Damage time: " << static_cast<float>(_elapsedTime.count()) / 1000000.0f);
         }
     }
 
@@ -307,6 +355,10 @@ void Main::Loop() {
             lastPickupTime = currentTime;
             PickupGroundItems();
         }
+    }
+
+    if (m_settings.MoveSpeedEnabled) {
+        MoveSpeedHack();
     }
 }
 

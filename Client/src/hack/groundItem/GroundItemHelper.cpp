@@ -31,7 +31,7 @@ GroundItemMap GroundItemHelper::getGroundItemMap() {
 }
 
 std::vector<GroundItem> GroundItemHelper::getGroundItemList() {
-    auto mainActor = InstanceHelper::GetMainActor();
+    auto mainActor = InstanceHelper::getMainActor();
 
     GroundItemMap groundItemMap = getGroundItemMap();
     std::vector<GroundItem> groundItemList;
@@ -41,8 +41,8 @@ std::vector<GroundItem> GroundItemHelper::getGroundItemList() {
         if (!groundItem.IsValid())
             continue;
 
-        std::string ownership = groundItem.GetOwnership();
-        std::string playerName = mainActor.GetName();
+        std::string ownership = groundItem.getOwnership();
+        std::string playerName = mainActor.getName();
 
         if (!ownership.empty() && ownership.compare(playerName) != 0) {
             continue;

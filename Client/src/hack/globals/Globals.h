@@ -87,6 +87,7 @@ public:
     uint32_t OffsetBase = 0x2C4;
     uint32_t NameOffset = 0x14;
     uint32_t m_kAliveInstMapOffset = 0x20;
+    uint32_t RaceMotionDataPtrOffset = OffsetBase + 0x470;
 
     uint32_t SetAttackVidOffset = 0x349AC;
     uint32_t SetAttackStateOffset = 0x64;
@@ -109,6 +110,7 @@ public:
     uint32_t InstanceTypeOffset = OffsetBase + 0x44C;
     uint32_t IsDeadOffset = OffsetBase + 0x498;
     uint32_t VIDOffset = OffsetBase + 0x5F0;
+    uint32_t RotationOffset = OffsetBase + 0x524;
 
     uintptr_t PythonCharacterManager = 0;
     uintptr_t PythonPlayer = 0;

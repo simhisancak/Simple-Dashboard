@@ -16,10 +16,10 @@ public:
     Item(uintptr_t address)
         : m_Address(address) { }
 
-    bool IsValid() const { return !GetName().empty(); }
+    bool IsValid() const { return !getName().empty(); }
 
-    std::string GetName() const;
-    uint32_t GetVnum() const;
+    std::string getName() const;
+    uint32_t getVnum() const;
 
     static Item FromAddress(uintptr_t address) { return Item(address); }
 };

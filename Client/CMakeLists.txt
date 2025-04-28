@@ -73,6 +73,8 @@ set(HACK_FILES
     src/hack/item/ItemHelper.cpp
     src/hack/groundItem/GroundItem.cpp
     src/hack/groundItem/GroundItemHelper.cpp
+    src/hack/gameFunctions/GameFunctions.cpp
+    src/hack/customGameFunctions/CustomGameFunctions.cpp
 )
 
 # Core kaynak dosyaları

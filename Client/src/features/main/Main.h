@@ -23,13 +23,14 @@ public:
     virtual void Loop() override;
 
 private:
-    static void WaitHack();
+    static void WaitDamage();
     static void RangeDamage();
     static void RangeDamageSafe();
 
     static std::vector<GroundItem> FilterGroundItems(const std::vector<GroundItem>& groundItemList,
                                                      const Math::Vector3& mainActorPos);
     static void PickupGroundItems();
+    static void MoveSpeedHack();
 
     static Math::Vector3 FindSafePosition(const Math::Vector3& mainActorPos,
                                           float currentRadius,
@@ -42,6 +43,7 @@ private:
 
     static Math::Vector3 m_mainActorPosLast;
     static float m_angle;
+    static bool m_boost;
 };
 
 } // namespace FracqClient

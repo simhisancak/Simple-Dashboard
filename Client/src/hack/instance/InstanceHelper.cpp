@@ -13,7 +13,7 @@ namespace {
     }
 }
 
-Instance InstanceHelper::GetMainActor() {
+Instance InstanceHelper::getMainActor() {
     return Instance::FromAddress(
         Common::Memory::Read<uintptr_t>(Globals::Get()->PythonCharacterManager + 0xC));
 }
@@ -36,7 +36,7 @@ CharacterInstanceMap InstanceHelper::getAlivaInstMap() {
 
 std::vector<Packets::Instance> InstanceHelper::getMobs(MobType targetTypes) {
     std::vector<Packets::Instance> mobList;
-    auto mainActor = GetMainActor();
+    auto mainActor = getMainActor();
 
     if (!mainActor.IsValid())
         return mobList;
@@ -48,22 +48,22 @@ std::vector<Packets::Instance> InstanceHelper::getMobs(MobType targetTypes) {
         auto instance = Instance::FromAddress(Ins.second);
         auto packet = Packets::Instance();
 
-        if (!instance.IsValid() || instance.GetAddress() == mainActor.GetAddress())
+        if (!instance.IsValid() || instance.getAddress() == mainActor.getAddress())
             continue;
 
-        uint8_t type = instance.GetType();
+        uint8_t type = instance.getType();
         if (!static_cast<uint8_t>(targetTypes & static_cast<MobType>(1 << type)))
             continue;
 
         if (instance.IsDead())
             continue;
 
-        auto pos = instance.GetPixelPosition();
+        auto pos = instance.getPixelPosition();
         if (pos.x < 10.0f || pos.y < 10.0f)
             continue;
 
         packet.VID = iIndex;
-        strcpy(packet.Name, instance.GetName().c_str());
+        strcpy(packet.Name, instance.getName().c_str());
         packet.Position = pos;
         packet.Type = type;
 
@@ -74,27 +74,43 @@ std::vector<Packets::Instance> InstanceHelper::getMobs(MobType targetTypes) {
 
 std::vector<Instance> InstanceHelper::getMobList(MobType targetTypes) {
     std::vector<Instance> mobList;
-    auto mainActor = GetMainActor();
+    auto mainActor = getMainActor();
 
     if (!mainActor.IsValid())
         return mobList;
 
     CharacterInstanceMap m_kAliveInstMap = getAlivaInstMap();
+    if (m_kAliveInstMap.empty())
+        return mobList;
+
+    // Önceden hesapla
+    uintptr_t mainActorAddr = mainActor.getAddress();
+    uint8_t targetTypeMask = static_cast<uint8_t>(targetTypes);
+
+    // Rezerve et
+    mobList.reserve(m_kAliveInstMap.size());
 
     for (const auto& Ins : m_kAliveInstMap) {
         uint32_t iIndex = Ins.first;
-        auto instance = Instance::FromAddress(Ins.second);
+        uintptr_t instanceAddr = Ins.second;
 
-        if (!instance.IsValid() || instance.GetAddress() == mainActor.GetAddress())
+        // Hızlı kontroller
+        if (instanceAddr < 0x10000 || instanceAddr == mainActorAddr)
             continue;
 
-        if (!static_cast<uint8_t>(targetTypes & static_cast<MobType>(1 << instance.GetType())))
+        Instance instance = Instance::FromAddress(instanceAddr);
+
+        // Tip kontrolü
+        uint8_t type = instance.getType();
+        if (!(targetTypeMask & (1 << type)))
             continue;
 
+        // Ölü kontrolü
         if (instance.IsDead())
             continue;
 
-        auto pos = instance.GetPixelPosition();
+        // Pozisyon kontrolü
+        auto pos = instance.getPixelPosition();
         if (pos.x < 10.0f || pos.y < 10.0f)
             continue;
 
@@ -104,7 +120,7 @@ std::vector<Instance> InstanceHelper::getMobList(MobType targetTypes) {
     return mobList;
 }
 
-uintptr_t InstanceHelper::GetInstanceByVID(uint32_t vid) {
+uintptr_t InstanceHelper::getInstanceByVID(uint32_t vid) {
     uintptr_t charactermanager = Globals::Get()->PythonCharacterManager;
     uintptr_t _ptr = 0;
 
